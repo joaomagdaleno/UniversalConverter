@@ -31,29 +31,27 @@ def convert_webp_to_gif(input_path, output_dir, frame_rate=10, loop=0):
 
         # Abre a imagem .webp com o Pillow
         with Image.open(input_path) as img:
-            # Prepara os parâmetros para salvar o GIF
-            save_params = {
-                'save_all': True,
-                'append_images': [],
-                'duration': int(1000 / frame_rate),
-                'loop': loop,
-                'disposal': 2  # Mantém o fundo transparente
-            }
+            # Processa cada frame para aplicar dithering e otimizar a paleta
+            frames = []
+            for i in range(img.n_frames):
+                img.seek(i)
+                # Converte para RGBA e aplica quantização com dithering Floyd-Steinberg
+                quantized_frame = img.convert("RGBA").quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG)
+                frames.append(quantized_frame)
 
-            # Garante que a transparência seja mantida
-            if 'transparency' in img.info:
-                save_params['transparency'] = img.info['transparency']
-
-            # Adiciona todos os frames se for um .webp animado
-            if img.n_frames > 1:
-                # O primeiro frame já está carregado, então adicionamos do segundo em diante
-                for frame in range(1, img.n_frames):
-                    img.seek(frame)
-                    save_params['append_images'].append(img.copy())
-
-            # Volta para o primeiro frame para salvar
-            img.seek(0)
-            img.save(output_path, 'gif', **save_params)
+            # Salva os frames processados como um GIF animado
+            if frames:
+                frames[0].save(
+                    output_path,
+                    'gif',
+                    save_all=True,
+                    append_images=frames[1:],
+                    duration=int(1000 / frame_rate),
+                    loop=loop,
+                    disposal=2,
+                    # Garante que a transparência seja preservada corretamente
+                    transparency=img.info.get('transparency')
+                )
 
         return output_path
     except Exception as e:
