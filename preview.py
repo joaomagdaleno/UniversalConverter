@@ -1,11 +1,11 @@
 import tkinter as tk
-from tkinter import ttk
+import ttkbootstrap as ttk
+from tkinter import messagebox
 import os
 from converter import convert_gif_to_webp # Assumindo que a lógica de conversão está aqui
 import tempfile
-from PIL import Image
 
-class PreviewWindow(tk.Toplevel):
+class PreviewWindow(ttk.Toplevel):
     def __init__(self, parent, input_path, output_dir):
         super().__init__(parent)
         self.transient(parent)
@@ -19,7 +19,6 @@ class PreviewWindow(tk.Toplevel):
         self.temp_output_path = None
         self.final_output_path = None
 
-        # --- Variáveis de controle ---
         self.lossless_var = tk.BooleanVar(value=parent.lossless_var.get())
         self.quality_var = tk.IntVar(value=parent.quality_var.get())
 
@@ -30,7 +29,6 @@ class PreviewWindow(tk.Toplevel):
         main_frame = ttk.Frame(self, padding="15")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # --- Informações dos Arquivos ---
         info_frame = ttk.LabelFrame(main_frame, text="Informações", padding="10")
         info_frame.pack(fill=tk.X)
 
@@ -43,29 +41,26 @@ class PreviewWindow(tk.Toplevel):
         self.preview_size_label = ttk.Label(info_frame, text="Tamanho: ...")
         self.preview_size_label.grid(row=1, column=1, sticky="e", padx=10, pady=(10, 0))
 
-        # --- Controles de Qualidade ---
         settings_frame = ttk.LabelFrame(main_frame, text="Ajustar Qualidade", padding="10")
         settings_frame.pack(fill=tk.X, pady=15)
 
-        ttk.Checkbutton(settings_frame, text="Compressão sem Perdas", variable=self.lossless_var, command=self.toggle_quality_slider).grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Checkbutton(settings_frame, text="Compressão sem Perdas", variable=self.lossless_var, command=self.toggle_quality_slider, bootstyle="primary-round-toggle").grid(row=0, column=0, columnspan=2, sticky="w")
 
         self.quality_label = ttk.Label(settings_frame, text="Qualidade (1-100):")
         self.quality_label.grid(row=1, column=0, sticky="w", pady=5)
 
-        self.quality_slider = ttk.Scale(settings_frame, from_=1, to=100, orient=tk.HORIZONTAL, variable=self.quality_var, length=250)
+        self.quality_slider = ttk.Scale(settings_frame, from_=1, to=100, orient=tk.HORIZONTAL, variable=self.quality_var, length=250, bootstyle="info")
         self.quality_slider.grid(row=1, column=1, sticky="w", pady=5)
-        self.toggle_quality_slider() # Seta o estado inicial
+        self.toggle_quality_slider()
 
-        btn_update = ttk.Button(settings_frame, text="Atualizar Pré-visualização", command=self.update_preview)
+        btn_update = ttk.Button(settings_frame, text="Atualizar Pré-visualização", command=self.update_preview, bootstyle="info")
         btn_update.grid(row=2, column=0, columnspan=2, pady=10)
 
-        # --- Botões de Ação ---
         action_frame = ttk.Frame(main_frame)
         action_frame.pack(fill=tk.X, side="bottom", pady=(10,0))
 
-        ttk.Button(action_frame, text="Salvar", command=self.save).pack(side="right")
-        ttk.Button(action_frame, text="Cancelar", command=self.destroy).pack(side="right", padx=10)
-
+        ttk.Button(action_frame, text="Salvar", command=self.save, bootstyle="success").pack(side="right")
+        ttk.Button(action_frame, text="Cancelar", command=self.destroy, bootstyle="secondary").pack(side="right", padx=10)
 
     def toggle_quality_slider(self):
         state = "disabled" if self.lossless_var.get() else "normal"
@@ -73,23 +68,14 @@ class PreviewWindow(tk.Toplevel):
         self.quality_label.config(state=state)
 
     def update_preview(self):
-        """Executa a conversão para um arquivo temporário e atualiza a UI."""
         lossless = self.lossless_var.get()
         quality = self.quality_var.get()
 
-        # Cria um arquivo temporário para a pré-visualização
         temp_dir = tempfile.gettempdir()
 
-        # Lógica de conversão GIF para WebP
-        # (Em um projeto real, isso seria mais abstrato para lidar com múltiplos tipos)
-        self.temp_output_path = convert_gif_to_webp(
-            self.input_path,
-            temp_dir,
-            lossless=lossless,
-            quality=quality
-        )
+        self.temp_output_path = convert_gif_to_webp(self.input_path, temp_dir, lossless=lossless, quality=quality)
 
-        if self.temp_output_path:
+        if self.temp_output_path and os.path.exists(self.temp_output_path):
             preview_size = os.path.getsize(self.temp_output_path) / 1024
             reduction = 100 - (preview_size / self.original_size * 100)
             self.preview_size_label.config(text=f"Tamanho: {preview_size:.2f} KB ({reduction:.1f}% menor)")
@@ -97,9 +83,7 @@ class PreviewWindow(tk.Toplevel):
             self.preview_size_label.config(text="Falha na conversão.")
 
     def save(self):
-        """Salva o arquivo temporário no destino final."""
         if self.temp_output_path and os.path.exists(self.temp_output_path):
-            # Define o caminho final, verificando por colisões de nome
             base_name = os.path.splitext(os.path.basename(self.input_path))[0]
             output_path = os.path.join(self.output_dir, f"{base_name}.webp")
             i = 1
@@ -115,7 +99,6 @@ class PreviewWindow(tk.Toplevel):
             messagebox.showerror("Erro", "Nenhuma pré-visualização válida para salvar.", parent=self)
 
     def destroy(self):
-        # Garante que o arquivo temporário seja removido ao fechar a janela
         if self.temp_output_path and os.path.exists(self.temp_output_path) and not self.final_output_path:
             os.remove(self.temp_output_path)
         super().destroy()
