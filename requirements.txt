@@ -1,4 +1,0 @@
-Pillow
-ttkbootstrap
-packaging
-pyinstaller
