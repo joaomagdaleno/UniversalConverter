@@ -1,9 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
+import json
+import threading
 from preview import PreviewWindow
 from converter import convert_webp_to_gif, convert_gif_to_webp
-import threading
+from updater import Updater
 
 class App(tk.Tk):
     def __init__(self):
@@ -24,6 +26,10 @@ class App(tk.Tk):
         self.create_main_layout()
         self.create_sidebar()
         self.show_dashboard()
+
+        # Inicia a verificação de atualização em segundo plano
+        update_thread = threading.Thread(target=self.check_for_updates_thread, daemon=True)
+        update_thread.start()
 
     def create_main_layout(self):
         main_container = ttk.Frame(self)
@@ -237,6 +243,40 @@ class App(tk.Tk):
         self.status_label.config(text="")
         self.progress_bar["value"] = 0
         self.update_button_states()
+
+
+    def check_for_updates_thread(self):
+        """Verifica se há atualizações em uma thread separada."""
+        try:
+            with open('config.json', 'r') as f:
+                config = json.load(f)
+
+            with open('version.json', 'r') as f:
+                version_info = json.load(f)
+
+            updater = Updater(config_url=config['config_url'], current_version=version_info['version'])
+
+            if updater.check_for_updates():
+                release_info = updater.latest_version_info
+                msg = (f"Uma nova versão ({release_info['version']}) está disponível!\n\n"
+                       f"Notas da versão:\n{release_info['release_notes']}\n\n"
+                       f"Deseja baixar e instalar a atualização agora?")
+
+                if messagebox.askyesno("Atualização Disponível", msg):
+                    self.status_label.config(text="Baixando atualização...")
+                    download_path = updater.download_update()
+                    if download_path:
+                        self.status_label.config(text="Atualização baixada. O aplicativo será reiniciado.")
+                        if updater.apply_update(download_path):
+                            self.destroy() # Fecha a aplicação para o .bat assumir
+                        else:
+                            messagebox.showerror("Erro", "Falha ao aplicar a atualização.")
+                    else:
+                        messagebox.showerror("Erro", "Falha ao baixar a atualização.")
+        except FileNotFoundError:
+            print("Arquivos de configuração ou versão não encontrados. Pulando verificação de atualização.")
+        except Exception as e:
+            print(f"Erro inesperado durante a verificação de atualização: {e}")
 
 
 if __name__ == "__main__":
