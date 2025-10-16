@@ -1,0 +1,26 @@
+# Arquivos de Cache e Bytecode do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pastas de distribuição e compilação do PyInstaller
+dist/
+build/
+*.spec
+
+# Arquivos de IDEs e editores de código comuns
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de ambiente virtual do Python
+venv/
+*.venv
+.env
+env/
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
