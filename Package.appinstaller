@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller
+    Uri="http://example.com/app/UniversalConverter.appinstaller"
+    Version="1.0.0.0"
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
+
+    <MainBundle
+        Name="UniversalConverter"
+        Version="1.0.0.0"
+        Publisher="CN=Jules"
+        Uri="http://example.com/app/UniversalConverter.msix" />
+
+    <UpdateSettings>
+        <OnLaunch
+            HoursBetweenUpdateChecks="0" />
+    </UpdateSettings>
+
+</AppInstaller>
