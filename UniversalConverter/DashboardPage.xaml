@@ -20,13 +20,13 @@
             <Border Width="200" Height="150" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Margin="10">
                 <StackPanel Margin="10">
                     <TextBlock Text="Total de Conversões" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                    <TextBlock Text="0" FontSize="48" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TotalConversionsTextBlock" Text="0" FontSize="48" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
             <Border Width="200" Height="150" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Margin="10">
                 <StackPanel Margin="10">
                     <TextBlock Text="Última Conversão" Style="{StaticResource SubtitleTextBlockStyle}"/>
-                    <TextBlock Text="N/A" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="LastConversionTextBlock" Text="N/A" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
         </GridView>

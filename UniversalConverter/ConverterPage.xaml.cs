@@ -2,9 +2,11 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.IO;
+using System.Linq;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace UniversalConverter
 {
@@ -28,8 +30,10 @@ namespace UniversalConverter
         private void UpdateOptionsUI()
         {
             var selectedFormat = (OutputFormatComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
-            WebpQualitySlider.IsEnabled = selectedFormat == "WEBP";
-            GifLoopCheckBox.IsEnabled = selectedFormat == "GIF";
+            WebpQualitySlider.Visibility = selectedFormat == "WEBP" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            JpgQualitySlider.Visibility = selectedFormat == "JPG" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            PngCompressionSlider.Visibility = selectedFormat == "PNG" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            GifLoopCheckBox.Visibility = selectedFormat == "GIF" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
         }
 
         private async void SelectFileButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -37,6 +41,9 @@ namespace UniversalConverter
             var fileOpenPicker = new FileOpenPicker();
             fileOpenPicker.FileTypeFilter.Add(".webp");
             fileOpenPicker.FileTypeFilter.Add(".gif");
+            fileOpenPicker.FileTypeFilter.Add(".jpg");
+            fileOpenPicker.FileTypeFilter.Add(".jpeg");
+            fileOpenPicker.FileTypeFilter.Add(".png");
 
             var window = App.Current.Windows[0];
             InitializeWithWindow.Initialize(fileOpenPicker, window.GetWindowHandle());
@@ -48,16 +55,6 @@ namespace UniversalConverter
                 PreviewTextBlock.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
                 PreviewImage.Source = new BitmapImage(new Uri(selectedFile.Path));
                 ConvertButton.IsEnabled = true;
-
-                // Auto-select output format
-                if (Path.GetExtension(selectedFile.Name).ToLower() == ".webp")
-                {
-                    OutputFormatComboBox.SelectedItem = OutputFormatComboBox.Items[0]; // GIF
-                }
-                else
-                {
-                    OutputFormatComboBox.SelectedItem = OutputFormatComboBox.Items[1]; // WEBP
-                }
             }
         }
 
@@ -86,19 +83,15 @@ namespace UniversalConverter
                 var options = new ConversionOptions
                 {
                     WebpQuality = (int)WebpQualitySlider.Value,
-                    GifRepeatCount = GifLoopCheckBox.IsChecked == true ? (ushort)0 : (ushort)1
+                    GifRepeatCount = GifLoopCheckBox.IsChecked == true ? (ushort)0 : (ushort)1,
+                    JpgQuality = (int)JpgQualitySlider.Value,
+                    PngCompression = (PngCompressionLevel)Convert.ToInt32(PngCompressionSlider.Value)
                 };
 
                 try
                 {
-                    if (selectedFormat == "GIF")
-                    {
-                        imageConverter.ConvertWebPToGif(selectedFile.Path, destinationFile.Path, options);
-                    }
-                    else
-                    {
-                        imageConverter.ConvertGifToWebP(selectedFile.Path, destinationFile.Path, options);
-                    }
+                    imageConverter.ConvertImage(selectedFile.Path, destinationFile.Path, options);
+                    StatsService.RecordConversion();
                     await ShowContentDialog("Sucesso", "A imagem foi convertida com sucesso!");
                 }
                 catch (Exception ex)
@@ -134,28 +127,26 @@ namespace UniversalConverter
                 var options = new ConversionOptions
                 {
                     WebpQuality = (int)WebpQualitySlider.Value,
-                    GifRepeatCount = GifLoopCheckBox.IsChecked == true ? (ushort)0 : (ushort)1
+                    GifRepeatCount = GifLoopCheckBox.IsChecked == true ? (ushort)0 : (ushort)1,
+                    JpgQuality = (int)JpgQualitySlider.Value,
+                    PngCompression = (PngCompressionLevel)Convert.ToInt32(PngCompressionSlider.Value)
                 };
 
-                string inputExtension = selectedFormat == "GIF" ? ".webp" : ".gif";
+                var validExtensions = new[] { ".webp", ".gif", ".jpg", ".jpeg", ".png" };
+                string outputExtension = $".{selectedFormat.ToLower()}";
 
                 foreach (var file in files)
                 {
-                    if (Path.GetExtension(file.Name).ToLower() == inputExtension)
+                    string inputExtension = Path.GetExtension(file.Name).ToLower();
+                    if (validExtensions.Contains(inputExtension) && inputExtension != outputExtension)
                     {
                         try
                         {
-                            string newFileName = Path.GetFileNameWithoutExtension(file.Name) + $".{selectedFormat.ToLower()}";
+                            string newFileName = Path.GetFileNameWithoutExtension(file.Name) + outputExtension;
                             StorageFile newFile = await folder.CreateFileAsync(newFileName, CreationCollisionOption.GenerateUniqueName);
 
-                            if (selectedFormat == "GIF")
-                            {
-                                imageConverter.ConvertWebPToGif(file.Path, newFile.Path, options);
-                            }
-                            else
-                            {
-                                imageConverter.ConvertGifToWebP(file.Path, newFile.Path, options);
-                            }
+                            imageConverter.ConvertImage(file.Path, newFile.Path, options);
+                            StatsService.RecordConversion();
                             successCount++;
                         }
                         catch

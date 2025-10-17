@@ -36,8 +36,17 @@
 
         <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="10" Margin="0,20,0,0">
             <TextBlock Text="Opções de Conversão" Style="{StaticResource SubtitleTextBlockStyle}"/>
-            <ComboBox x:Name="OutputFormatComboBox" Header="Formato de Saída" PlaceholderText="Selecione o formato" Width="200"/>
+            <ComboBox x:Name="OutputFormatComboBox" Header="Formato de Saída" PlaceholderText="Selecione o formato" Width="200">
+                <ComboBoxItem Content="GIF"/>
+                <ComboBoxItem Content="WEBP"/>
+                <ComboBoxItem Content="JPG"/>
+                <ComboBoxItem Content="PNG"/>
+            </ComboBox>
+
             <Slider x:Name="WebpQualitySlider" Header="Qualidade WEBP" Minimum="1" Maximum="100" Value="75" Width="300"/>
+            <Slider x:Name="JpgQualitySlider" Header="Qualidade JPG" Minimum="1" Maximum="100" Value="75" Width="300"/>
+            <!-- PNG CompressionLevel: 0=None, 1=Fastest, up to 9=Best -->
+            <Slider x:Name="PngCompressionSlider" Header="Compressão PNG (0=Mín, 9=Máx)" Minimum="0" Maximum="9" Value="6" Width="300"/>
             <CheckBox x:Name="GifLoopCheckBox" Content="Loop Infinito (GIF)" IsChecked="True"/>
         </StackPanel>
 
