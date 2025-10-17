@@ -9,16 +9,29 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <StackPanel Margin="20" Spacing="20">
-        <TextBlock Text="Configurações" Style="{StaticResource TitleTextBlockStyle}"/>
+        <TextBlock x:Uid="SettingsTitle" Style="{StaticResource TitleTextBlockStyle}"/>
 
         <StackPanel Spacing="10">
-            <TextBlock Text="Sobre" Style="{StaticResource SubtitleTextBlockStyle}"/>
-            <TextBlock x:Name="VersionTextBlock" Text="Versão: "/>
+            <TextBlock x:Uid="AboutTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <TextBlock x:Name="VersionTextBlock" x:Uid="VersionTextBlock"/>
         </StackPanel>
 
         <StackPanel Spacing="10">
-            <TextBlock Text="Atualizações" Style="{StaticResource SubtitleTextBlockStyle}"/>
-            <Button x:Name="CheckForUpdatesButton" Content="Verificar Atualizações"/>
+            <TextBlock x:Uid="AppearanceTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <ComboBox x:Name="ThemeComboBox" x:Uid="ThemeComboBox" Width="200">
+                <ComboBoxItem Content="Claro"/>
+                <ComboBoxItem Content="Escuro"/>
+                <ComboBoxItem Content="Padrão do Sistema"/>
+            </ComboBox>
+            <ComboBox x:Name="LanguageComboBox" x:Uid="LanguageComboBox" Width="200">
+                <ComboBoxItem Content="Português" Tag="pt-BR"/>
+                <ComboBoxItem Content="English" Tag="en-US"/>
+            </ComboBox>
+        </StackPanel>
+
+        <StackPanel Spacing="10">
+            <TextBlock x:Uid="UpdatesTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Button x:Name="CheckForUpdatesButton" x:Uid="CheckForUpdatesButton"/>
         </StackPanel>
     </StackPanel>
 </Page>

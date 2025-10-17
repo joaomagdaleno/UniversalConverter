@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+
+  <!-- Navigation -->
+  <data name="DashboardNav.Content" xml:space="preserve">
+    <value>Painel</value>
+  </data>
+  <data name="ConverterNav.Content" xml:space="preserve">
+    <value>Converter</value>
+  </data>
+
+  <!-- Converter Page -->
+  <data name="ConverterTitle.Text" xml:space="preserve">
+    <value>Conversor de Imagens</value>
+  </data>
+  <data name="SelectFileButtonText.Text" xml:space="preserve">
+    <value>Selecionar Arquivo</value>
+  </data>
+  <data name="SelectFolderButtonText.Text" xml:space="preserve">
+    <value>Selecionar Pasta</value>
+  </data>
+  <data name="KeepStructureCheckBox.Content" xml:space="preserve">
+    <value>Manter estrutura de pastas</value>
+  </data>
+  <data name="ConversionOptionsTitle.Text" xml:space="preserve">
+    <value>Opções de Conversão</value>
+  </data>
+  <data name="OutputFormatComboBox.Header" xml:space="preserve">
+    <value>Formato de Saída</value>
+  </data>
+  <data name="WebpQualitySlider.Header" xml:space="preserve">
+    <value>Qualidade WEBP</value>
+  </data>
+  <data name="JpgQualitySlider.Header" xml:space="preserve">
+    <value>Qualidade JPG</value>
+  </data>
+  <data name="PngCompressionSlider.Header" xml:space="preserve">
+    <value>Compressão PNG (0=Mín, 9=Máx)</value>
+  </data>
+  <data name="GifLoopCheckBox.Content" xml:space="preserve">
+    <value>Loop Infinito (GIF)</value>
+  </data>
+  <data name="ResizeTitle.Text" xml:space="preserve">
+    <value>Redimensionamento</value>
+  </data>
+  <data name="WidthNumberBox.Header" xml:space="preserve">
+    <value>Largura (px)</value>
+  </data>
+  <data name="HeightNumberBox.Header" xml:space="preserve">
+    <value>Altura (px)</value>
+  </data>
+  <data name="AspectRatioCheckBox.Content" xml:space="preserve">
+    <value>Manter proporção</value>
+  </data>
+  <data name="OriginalPreviewTitle.Text" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="ConvertedPreviewTitle.Text" xml:space="preserve">
+    <value>Pré-visualização</value>
+  </data>
+  <data name="PreviewTextBlock.Text" xml:space="preserve">
+    <value>Selecione uma imagem para pré-visualizar</value>
+  </data>
+  <data name="DragDropOverlayText.Text" xml:space="preserve">
+    <value>Solte aqui para converter</value>
+  </data>
+  <data name="ConvertButtonText.Text" xml:space="preserve">
+    <value>Converter</value>
+  </data>
+
+  <!-- Dashboard Page -->
+  <data name="DashboardTitle.Text" xml:space="preserve">
+    <value>Painel Principal</value>
+  </data>
+  <data name="TotalConversionsTitle.Text" xml:space="preserve">
+    <value>Total de Conversões</value>
+  </data>
+  <data name="LastConversionTitle.Text" xml:space="preserve">
+    <value>Última Conversão</value>
+  </data>
+
+  <!-- Settings Page -->
+  <data name="SettingsTitle.Text" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="AboutTitle.Text" xml:space="preserve">
+    <value>Sobre</value>
+  </data>
+  <data name="VersionTextBlock.Text" xml:space="preserve">
+    <value>Versão:</value>
+  </data>
+  <data name="AppearanceTitle.Text" xml:space="preserve">
+    <value>Aparência</value>
+  </data>
+  <data name="ThemeComboBox.Header" xml:space="preserve">
+    <value>Tema do Aplicativo</value>
+  </data>
+  <data name="LanguageComboBox.Header" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="UpdatesTitle.Text" xml:space="preserve">
+    <value>Atualizações</value>
+  </data>
+  <data name="CheckForUpdatesButton.Content" xml:space="preserve">
+    <value>Verificar Atualizações</value>
+  </data>
+</root>
