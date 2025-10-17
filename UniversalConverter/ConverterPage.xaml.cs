@@ -303,9 +303,14 @@ namespace UniversalConverter
             var items = await currentFolder.GetItemsAsync();
             foreach (var item in items)
             {
-                if (item is StorageFolder subFolder && KeepStructureCheckBox.IsChecked == true)
+                if (item is StorageFolder subFolder)
                 {
-                    var newDestFolder = await currentDestinationFolder.CreateFolderAsync(subFolder.Name, CreationCollisionOption.OpenIfExists);
+                    // Process subdirectories regardless of KeepStructureCheckBox
+                    StorageFolder newDestFolder = currentDestinationFolder;
+                    if (KeepStructureCheckBox.IsChecked == true)
+                    {
+                        newDestFolder = await currentDestinationFolder.CreateFolderAsync(subFolder.Name, CreationCollisionOption.OpenIfExists);
+                    }
                     await AddFolderToQueueRecursively(subFolder, rootSourceFolder, newDestFolder, outputFormat);
                 }
                 else if (item is StorageFile file)
