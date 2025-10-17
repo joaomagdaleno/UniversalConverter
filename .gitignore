@@ -14,6 +14,7 @@ build/
 .idea/
 *.swp
 *.swo
+.vs/
 
 # Arquivos de ambiente virtual do Python
 venv/
