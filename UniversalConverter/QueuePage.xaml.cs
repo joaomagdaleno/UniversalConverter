@@ -8,6 +8,7 @@ namespace UniversalConverter
         public QueuePage()
         {
             this.InitializeComponent();
+            QueueService.Initialize(DispatcherQueue);
             QueueListView.ItemsSource = QueueService.Queue;
         }
 
