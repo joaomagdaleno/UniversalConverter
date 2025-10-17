@@ -17,7 +17,7 @@ namespace UniversalConverter
         {
             if (args.IsSettingsInvoked)
             {
-                // Navigate to settings page
+                ContentFrame.Navigate(typeof(SettingsPage));
             }
             else
             {

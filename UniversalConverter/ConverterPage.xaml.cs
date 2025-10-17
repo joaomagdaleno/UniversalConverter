@@ -99,6 +99,7 @@ namespace UniversalConverter
                     {
                         imageConverter.ConvertGifToWebP(selectedFile.Path, destinationFile.Path, options);
                     }
+                    StatsService.RecordConversion();
                     await ShowContentDialog("Sucesso", "A imagem foi convertida com sucesso!");
                 }
                 catch (Exception ex)
@@ -156,6 +157,7 @@ namespace UniversalConverter
                             {
                                 imageConverter.ConvertGifToWebP(file.Path, newFile.Path, options);
                             }
+                            StatsService.RecordConversion();
                             successCount++;
                         }
                         catch

@@ -1,0 +1,24 @@
+<Page
+    x:Class="UniversalConverter.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:UniversalConverter"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <StackPanel Margin="20" Spacing="20">
+        <TextBlock Text="Configurações" Style="{StaticResource TitleTextBlockStyle}"/>
+
+        <StackPanel Spacing="10">
+            <TextBlock Text="Sobre" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <TextBlock x:Name="VersionTextBlock" Text="Versão: "/>
+        </StackPanel>
+
+        <StackPanel Spacing="10">
+            <TextBlock Text="Atualizações" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Button x:Name="CheckForUpdatesButton" Content="Verificar Atualizações"/>
+        </StackPanel>
+    </StackPanel>
+</Page>
