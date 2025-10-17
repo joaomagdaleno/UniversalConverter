@@ -19,6 +19,7 @@ namespace UniversalConverter
 
         public static int TotalConversions => _stats.TotalConversions;
         public static DateTime? LastConversionDate => _stats.LastConversionDate;
+        public static event EventHandler StatsChanged;
 
         public static async Task LoadAsync()
         {
@@ -33,6 +34,7 @@ namespace UniversalConverter
                 // Arquivo não encontrado, começa com estatísticas padrão
                 _stats = new StatisticsData();
             }
+            StatsChanged?.Invoke(null, EventArgs.Empty);
         }
 
         private static async Task SaveAsync()
@@ -47,6 +49,7 @@ namespace UniversalConverter
             _stats.TotalConversions++;
             _stats.LastConversionDate = DateTime.Now;
             await SaveAsync();
+            StatsChanged?.Invoke(null, EventArgs.Empty);
         }
     }
 }

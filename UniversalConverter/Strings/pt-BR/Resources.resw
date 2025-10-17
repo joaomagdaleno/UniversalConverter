@@ -93,6 +93,32 @@
   <data name="ConvertButtonText.Text" xml:space="preserve">
     <value>Converter</value>
   </data>
+  <data name="ScanningFolderText.Text" xml:space="preserve">
+    <value>Analisando pasta...</value>
+  </data>
+  <data name="PresetComboBox.Header" xml:space="preserve">
+    <value>Perfis</value>
+  </data>
+  <data name="SavePresetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Salvar Perfil</value>
+  </data>
+  <data name="DeletePresetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Excluir Perfil</value>
+  </data>
+
+    <!-- Queue Page -->
+    <data name="QueueTitle.Text" xml:space="preserve">
+        <value>Fila de Conversão</value>
+    </data>
+    <data name="StartButton.Content" xml:space="preserve">
+        <value>Iniciar</value>
+    </data>
+    <data name="PauseButton.Content" xml:space="preserve">
+        <value>Pausar</value>
+    </data>
+    <data name="ClearButton.Content" xml:space="preserve">
+        <value>Limpar Fila</value>
+    </data>
 
   <!-- Dashboard Page -->
   <data name="DashboardTitle.Text" xml:space="preserve">
@@ -132,5 +158,20 @@
   </data>
   <data name="CheckForUpdatesButton.Content" xml:space="preserve">
     <value>Verificar Atualizações</value>
+  </data>
+  <data name="ThemeLight.Content" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="ThemeDark.Content" xml:space="preserve">
+    <value>Escuro</value>
+  </data>
+  <data name="ThemeDefault.Content" xml:space="preserve">
+    <value>Padrão do Sistema</value>
+  </data>
+  <data name="LangPortuguese.Content" xml:space="preserve">
+    <value>Português</value>
+  </data>
+  <data name="LangEnglish.Content" xml:space="preserve">
+    <value>Inglês</value>
   </data>
 </root>

@@ -12,6 +12,7 @@ namespace UniversalConverter
         public App()
         {
             this.InitializeComponent();
+            AppServices.ConfigureServices();
             var savedLang = Windows.Storage.ApplicationData.Current.LocalSettings.Values["language"] as string;
             if (!string.IsNullOrEmpty(savedLang))
             {
