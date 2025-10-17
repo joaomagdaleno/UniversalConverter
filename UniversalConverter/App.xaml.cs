@@ -21,7 +21,7 @@ namespace UniversalConverter
 
         protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
-            await ActivateAsync();
+            await ActivateAsync(args.Arguments);
         }
 
         protected override async void OnActivated(IActivatedEventArgs args)
@@ -38,9 +38,6 @@ namespace UniversalConverter
         {
             if (m_window == null)
             {
-                await StatsService.LoadAsync();
-                await PresetService.LoadPresetsAsync();
-
                 m_window = new MainWindow();
 
                 var savedTheme = Windows.Storage.ApplicationData.Current.LocalSettings.Values["theme"] as string;
@@ -53,6 +50,13 @@ namespace UniversalConverter
                         default: rootElement.RequestedTheme = ElementTheme.Default; break;
                     }
                 }
+
+                // Load services in the background
+                _ = Task.Run(async () =>
+                {
+                    await StatsService.LoadAsync();
+                    await PresetService.LoadPresetsAsync();
+                });
             }
 
             if (activationArgs != null && m_window.Content is MainWindow mainWindow)
