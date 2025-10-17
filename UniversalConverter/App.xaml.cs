@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
 using System.Linq;
+using System.Threading.Tasks;
+using Windows.ApplicationModel.Activation;
 
 namespace UniversalConverter
 {
