@@ -2,7 +2,10 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing.Processors.Quantization;
+using System.IO;
 
 namespace UniversalConverter
 {
@@ -10,41 +13,53 @@ namespace UniversalConverter
     {
         public int WebpQuality { get; set; } = 75;
         public ushort GifRepeatCount { get; set; } = 0; // 0 for infinite loop
+        public int JpgQuality { get; set; } = 75;
+        public PngCompressionLevel PngCompression { get; set; } = PngCompressionLevel.Default;
     }
 
     public class ImageConverter
     {
-        public void ConvertWebPToGif(string inputPath, string outputPath, ConversionOptions options)
+        public void ConvertImage(string inputPath, string outputPath, ConversionOptions options)
         {
             using (Image image = Image.Load(inputPath))
             {
-                var quantizer = new WuQuantizer(new QuantizerOptions
+                string outputExtension = Path.GetExtension(outputPath).ToLower();
+
+                switch (outputExtension)
                 {
-                    MaxColors = 255,
-                    Dither = new FloydSteinbergDither()
-                });
+                    case ".gif":
+                        var gifQuantizer = new WuQuantizer(new QuantizerOptions
+                        {
+                            MaxColors = 255,
+                            Dither = new FloydSteinbergDither()
+                        });
+                        var gifEncoder = new GifEncoder
+                        {
+                            Quantizer = gifQuantizer,
+                        };
+                        image.Metadata.GetGifMetadata().RepeatCount = options.GifRepeatCount;
+                        image.SaveAsGif(outputPath, gifEncoder);
+                        break;
 
-                var encoder = new GifEncoder
-                {
-                    Quantizer = quantizer,
-                };
+                    case ".webp":
+                        var webpEncoder = new WebpEncoder { Quality = options.WebpQuality };
+                        image.SaveAsWebp(outputPath, webpEncoder);
+                        break;
 
-                image.Metadata.GetGifMetadata().RepeatCount = options.GifRepeatCount;
+                    case ".jpg":
+                    case ".jpeg":
+                        var jpegEncoder = new JpegEncoder { Quality = options.JpgQuality };
+                        image.SaveAsJpeg(outputPath, jpegEncoder);
+                        break;
 
-                image.SaveAsGif(outputPath, encoder);
-            }
-        }
+                    case ".png":
+                        var pngEncoder = new PngEncoder { CompressionLevel = options.PngCompression };
+                        image.SaveAsPng(outputPath, pngEncoder);
+                        break;
 
-        public void ConvertGifToWebP(string inputPath, string outputPath, ConversionOptions options)
-        {
-            using (Image image = Image.Load(inputPath))
-            {
-                var encoder = new WebpEncoder
-                {
-                    Quality = options.WebpQuality
-                };
-
-                image.SaveAsWebp(outputPath, encoder);
+                    default:
+                        throw new NotSupportedException($"Formato de saída '{outputExtension}' não é suportado.");
+                }
             }
         }
     }
