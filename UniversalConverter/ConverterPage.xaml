@@ -8,8 +8,9 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Margin="20">
+    <Grid Margin="20" AllowDrop="True" DragOver="Page_DragOver" Drop="Page_Drop">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -17,51 +18,104 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Orientation="Vertical" Spacing="10">
-            <TextBlock Text="Conversor de Imagens" Style="{StaticResource TitleTextBlockStyle}"/>
+            <TextBlock x:Uid="ConverterTitle" Style="{StaticResource TitleTextBlockStyle}"/>
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button x:Name="SelectFileButton" >
+                <ComboBox x:Name="PresetComboBox" x:Uid="PresetComboBox" Header="Perfis" Width="200" SelectionChanged="PresetComboBox_SelectionChanged"/>
+                <Button x:Name="SavePresetButton" x:Uid="SavePresetButton" Click="SavePresetButton_Click">
+                    <SymbolIcon Symbol="Save"/>
+                </Button>
+                <Button x:Name="DeletePresetButton" x:Uid="DeletePresetButton" Click="DeletePresetButton_Click">
+                    <SymbolIcon Symbol="Delete"/>
+                </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button x:Name="SelectFileButton">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <SymbolIcon Symbol="OpenFile"/>
-                        <TextBlock Text="Selecionar Arquivo"/>
+                        <TextBlock x:Uid="SelectFileButtonText" Text="Selecionar Arquivo"/>
                     </StackPanel>
                 </Button>
                 <Button x:Name="SelectFolderButton">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <SymbolIcon Symbol="OpenFolder"/>
-                        <TextBlock Text="Selecionar Pasta"/>
+                        <TextBlock x:Uid="SelectFolderButtonText" Text="Selecionar Pasta"/>
                     </StackPanel>
                 </Button>
+                <CheckBox x:Name="KeepStructureCheckBox" x:Uid="KeepStructureCheckBox" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
         </StackPanel>
 
         <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="10" Margin="0,20,0,0">
-            <TextBlock Text="Opções de Conversão" Style="{StaticResource SubtitleTextBlockStyle}"/>
-            <ComboBox x:Name="OutputFormatComboBox" Header="Formato de Saída" PlaceholderText="Selecione o formato" Width="200">
+            <TextBlock x:Uid="ConversionOptionsTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <ComboBox x:Name="OutputFormatComboBox" x:Uid="OutputFormatComboBox" PlaceholderText="Selecione o formato" Width="200">
                 <ComboBoxItem Content="GIF"/>
                 <ComboBoxItem Content="WEBP"/>
                 <ComboBoxItem Content="JPG"/>
                 <ComboBoxItem Content="PNG"/>
             </ComboBox>
-
-            <Slider x:Name="WebpQualitySlider" Header="Qualidade WEBP" Minimum="1" Maximum="100" Value="75" Width="300"/>
-            <Slider x:Name="JpgQualitySlider" Header="Qualidade JPG" Minimum="1" Maximum="100" Value="75" Width="300"/>
-            <!-- PNG CompressionLevel: 0=None, 1=Fastest, up to 9=Best -->
-            <Slider x:Name="PngCompressionSlider" Header="Compressão PNG (0=Mín, 9=Máx)" Minimum="0" Maximum="9" Value="6" Width="300"/>
-            <CheckBox x:Name="GifLoopCheckBox" Content="Loop Infinito (GIF)" IsChecked="True"/>
+            <Slider x:Name="WebpQualitySlider" x:Uid="WebpQualitySlider" Width="300"/>
+            <Slider x:Name="JpgQualitySlider" x:Uid="JpgQualitySlider" Width="300"/>
+            <Slider x:Name="PngCompressionSlider" x:Uid="PngCompressionSlider" Minimum="0" Maximum="9" Value="6" Width="300"/>
+            <CheckBox x:Name="GifLoopCheckBox" x:Uid="GifLoopCheckBox" IsChecked="True"/>
         </StackPanel>
 
-        <Grid Grid.Row="2" Margin="0,20">
-            <Border x:Name="PreviewArea" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4">
-                <Image x:Name="PreviewImage" Stretch="Uniform" />
+        <StackPanel Grid.Row="2" Orientation="Vertical" Spacing="10" Margin="0,20,0,0">
+            <TextBlock x:Uid="TransformsTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <StackPanel Spacing="5">
+                    <TextBlock x:Uid="ResizeTitle" Style="{StaticResource CaptionTextBlockStyle}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <NumberBox x:Name="WidthNumberBox" x:Uid="WidthNumberBox" Value="0" Width="120" SpinButtonPlacementMode="Compact"/>
+                        <NumberBox x:Name="HeightNumberBox" x:Uid="HeightNumberBox" Value="0" Width="120" SpinButtonPlacementMode="Compact"/>
+                        <CheckBox x:Name="AspectRatioCheckBox" x:Uid="AspectRatioCheckBox" IsChecked="True" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="5">
+                    <TextBlock x:Uid="RotateTitle" Style="{StaticResource CaptionTextBlockStyle}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="RotateLeftButton" x:Uid="RotateLeftButton" Click="RotateLeftButton_Click">
+                            <SymbolIcon Symbol="Rotate"/>
+                        </Button>
+                        <Button x:Name="RotateRightButton" x:Uid="RotateRightButton" Click="RotateRightButton_Click">
+                            <SymbolIcon Symbol="Rotate">
+                                <SymbolIcon.RenderTransform>
+                                    <ScaleTransform ScaleX="-1" />
+                                </SymbolIcon.RenderTransform>
+                            </SymbolIcon>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <Grid Grid.Row="3" Margin="0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Margin="0,0,5,0" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock x:Uid="OriginalPreviewTitle" HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Margin="5"/>
+                    <Image x:Name="OriginalPreviewImage" Stretch="Uniform" />
+                </StackPanel>
             </Border>
-            <TextBlock x:Name="PreviewTextBlock" Text="Selecione uma imagem para pré-visualizar" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Border Grid.Column="1" Margin="5,0,0,0" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock x:Uid="ConvertedPreviewTitle" HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Margin="5"/>
+                    <Image x:Name="ConvertedPreviewImage" Stretch="Uniform" />
+                </StackPanel>
+            </Border>
+            <TextBlock x:Name="PreviewTextBlock" x:Uid="PreviewTextBlock" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Border x:Name="DragDropOverlay" Grid.ColumnSpan="2" Background="#88000000" CornerRadius="4" Visibility="Collapsed">
+                <TextBlock x:Uid="DragDropOverlayText" Foreground="White" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
         </Grid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
             <Button x:Name="ConvertButton" Style="{StaticResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <SymbolIcon Symbol="Switch"/>
-                    <TextBlock Text="Converter"/>
+                    <TextBlock x:Uid="ConvertButtonText" Text="Converter"/>
                 </StackPanel>
             </Button>
         </StackPanel>

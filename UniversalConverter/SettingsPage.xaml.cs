@@ -1,6 +1,8 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using Windows.ApplicationModel;
+using Windows.Storage;
 
 namespace UniversalConverter
 {
@@ -11,6 +13,95 @@ namespace UniversalConverter
             this.InitializeComponent();
             LoadAppVersion();
             CheckForUpdatesButton.Click += CheckForUpdatesButton_Click;
+            ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
+            LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
+            NotificationsToggle.Toggled += NotificationsToggle_Toggled;
+            LoadThemeSetting();
+            LoadLanguageSetting();
+            LoadNotificationsSetting();
+        }
+
+        private void NotificationsToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            ApplicationData.Current.LocalSettings.Values["notifications"] = NotificationsToggle.IsOn;
+        }
+
+        private void LoadNotificationsSetting()
+        {
+            var savedNotifications = ApplicationData.Current.LocalSettings.Values["notifications"] as bool?;
+            NotificationsToggle.IsOn = savedNotifications ?? false;
+        }
+
+        private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selectedLang = (LanguageComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (selectedLang != null)
+            {
+                ApplicationData.Current.LocalSettings.Values["language"] = selectedLang;
+                ShowContentDialog("Idioma Alterado", "A alteração do idioma terá efeito na próxima vez que você iniciar o aplicativo.").AsTask();
+            }
+        }
+
+        private void LoadLanguageSetting()
+        {
+            var savedLang = ApplicationData.Current.LocalSettings.Values["language"] as string;
+            if (savedLang != null)
+            {
+                var index = savedLang == "pt-BR" ? 0 : 1;
+                LanguageComboBox.SelectedIndex = index;
+            }
+            else
+            {
+                LanguageComboBox.SelectedIndex = 0; // Padrão Português
+            }
+        }
+
+        private void LoadThemeSetting()
+        {
+            var savedTheme = ApplicationData.Current.LocalSettings.Values["theme"] as string;
+            if (savedTheme != null)
+            {
+                var index = savedTheme switch
+                {
+                    "Light" => 0,
+                    "Dark" => 1,
+                    _ => 2,
+                };
+                ThemeComboBox.SelectedIndex = index;
+            }
+            else
+            {
+                ThemeComboBox.SelectedIndex = 2; // Default to System
+            }
+        }
+
+        private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selectedItem = (ThemeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            ElementTheme theme;
+            string themeSetting;
+
+            switch (selectedItem)
+            {
+                case "Claro":
+                    theme = ElementTheme.Light;
+                    themeSetting = "Light";
+                    break;
+                case "Escuro":
+                    theme = ElementTheme.Dark;
+                    themeSetting = "Dark";
+                    break;
+                default:
+                    theme = ElementTheme.Default;
+                    themeSetting = "Default";
+                    break;
+            }
+
+            if (App.m_window.Content is FrameworkElement rootElement)
+            {
+                rootElement.RequestedTheme = theme;
+            }
+            ApplicationData.Current.LocalSettings.Values["theme"] = themeSetting;
         }
 
         private void LoadAppVersion()
@@ -27,7 +118,7 @@ namespace UniversalConverter
             }
         }
 
-        private async void CheckForUpdatesButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
         {
             CheckForUpdatesButton.IsEnabled = false;
             CheckForUpdatesButton.Content = "Verificando...";

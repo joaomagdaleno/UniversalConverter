@@ -1,19 +1,63 @@
 using Microsoft.UI.Xaml;
+using System.Linq;
 
 namespace UniversalConverter
 {
     public partial class App : Application
     {
-        private Window m_window;
+        public static Window m_window { get; private set; }
 
         public App()
         {
             this.InitializeComponent();
+            var savedLang = Windows.Storage.ApplicationData.Current.LocalSettings.Values["language"] as string;
+            if (!string.IsNullOrEmpty(savedLang))
+            {
+                Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = savedLang;
+            }
         }
 
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
-            m_window = new MainWindow();
+            await ActivateAsync();
+        }
+
+        protected override async void OnActivated(IActivatedEventArgs args)
+        {
+            object activationArg = null;
+            if (args is FileActivatedEventArgs fileArgs && fileArgs.Files.Any())
+            {
+                activationArg = fileArgs.Files[0];
+            }
+            await ActivateAsync(activationArg);
+        }
+
+        private async Task ActivateAsync(object activationArgs = null)
+        {
+            if (m_window == null)
+            {
+                await StatsService.LoadAsync();
+                await PresetService.LoadPresetsAsync();
+
+                m_window = new MainWindow();
+
+                var savedTheme = Windows.Storage.ApplicationData.Current.LocalSettings.Values["theme"] as string;
+                if (m_window.Content is FrameworkElement rootElement)
+                {
+                    switch (savedTheme)
+                    {
+                        case "Light": rootElement.RequestedTheme = ElementTheme.Light; break;
+                        case "Dark": rootElement.RequestedTheme = ElementTheme.Dark; break;
+                        default: rootElement.RequestedTheme = ElementTheme.Default; break;
+                    }
+                }
+            }
+
+            if (activationArgs != null && m_window.Content is MainWindow mainWindow)
+            {
+                mainWindow.NavigateToPageWithParameter(typeof(ConverterPage), activationArgs);
+            }
+
             m_window.Activate();
         }
     }
