@@ -73,9 +73,37 @@ namespace UniversalConverter
 
         private RotateMode GetNewRotation(RotateMode rotation)
         {
-            int current = (int)_currentRotation;
-            int add = (int)rotation;
-            return (RotateMode)((current + add) % 4);
+            if (rotation == RotateMode.Rotate90) // Rotate Right
+            {
+                switch (_currentRotation)
+                {
+                    case RotateMode.None:
+                        return RotateMode.Rotate90;
+                    case RotateMode.Rotate90:
+                        return RotateMode.Rotate180;
+                    case RotateMode.Rotate180:
+                        return RotateMode.Rotate270;
+                    case RotateMode.Rotate270:
+                    default:
+                        return RotateMode.None;
+                }
+            }
+            else if (rotation == RotateMode.Rotate270) // Rotate Left
+            {
+                switch (_currentRotation)
+                {
+                    case RotateMode.None:
+                        return RotateMode.Rotate270;
+                    case RotateMode.Rotate270:
+                        return RotateMode.Rotate180;
+                    case RotateMode.Rotate180:
+                        return RotateMode.Rotate90;
+                    case RotateMode.Rotate90:
+                    default:
+                        return RotateMode.None;
+                }
+            }
+            return _currentRotation; // Should not happen
         }
 
         private async Task LoadPresetsAsync()
