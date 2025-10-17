@@ -60,7 +60,17 @@ namespace UniversalConverter
                     break;
                 }
 
-                if (item.Status == QueueStatus.Pending)
+                item.Status = QueueStatus.InProgress;
+                try
+                {
+                    await Task.Run(() => _converter.ConvertImage(item.SourcePath, item.DestinationPath, item.Options), token);
+                    item.Status = QueueStatus.Completed;
+                }
+                catch (System.OperationCanceledException)
+                {
+                    item.Status = QueueStatus.Pending;
+                }
+                catch (System.Exception ex)
                 {
                     // Update status on UI thread
                     _dispatcherQueue?.TryEnqueue(() => item.Status = QueueStatus.InProgress);
