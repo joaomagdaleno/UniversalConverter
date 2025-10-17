@@ -8,6 +8,11 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
+    <Page.Resources>
+        <local:StatusToProgressConverter x:Key="StatusToProgressConverter"/>
+        <local:StatusToIndeterminateConverter x:Key="StatusToIndeterminateConverter"/>
+    </Page.Resources>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,15 +20,15 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Fila de Conversão" Style="{StaticResource TitleTextBlockStyle}"/>
+        <TextBlock Grid.Row="0" x:Uid="QueueTitle" Style="{StaticResource TitleTextBlockStyle}"/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,10,0,10">
-            <Button x:Name="StartButton" Content="Iniciar" Click="StartButton_Click"/>
-            <Button x:Name="PauseButton" Content="Pausar" Click="PauseButton_Click"/>
-            <Button x:Name="ClearButton" Content="Limpar Fila" Click="ClearButton_Click"/>
+            <Button x:Uid="StartButton" Command="{Binding StartCommand}"/>
+            <Button x:Uid="PauseButton" Command="{Binding PauseCommand}"/>
+            <Button x:Uid="ClearButton" Command="{Binding ClearCommand}"/>
         </StackPanel>
 
-        <ListView Grid.Row="2" x:Name="QueueListView">
+        <ListView Grid.Row="2" ItemsSource="{Binding Queue}">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:QueueItem">
                     <Grid Width="400">

@@ -14,7 +14,7 @@ namespace UniversalConverter
         public ConverterPage()
         {
             this.InitializeComponent();
-            ViewModel = new ConverterViewModel();
+            ViewModel = AppServices.Services.GetRequiredService<ConverterViewModel>();
             this.DataContext = ViewModel;
         }
 

@@ -93,6 +93,32 @@
   <data name="ConvertButtonText.Text" xml:space="preserve">
     <value>Convert</value>
   </data>
+  <data name="ScanningFolderText.Text" xml:space="preserve">
+    <value>Scanning folder...</value>
+  </data>
+  <data name="PresetComboBox.Header" xml:space="preserve">
+    <value>Presets</value>
+  </data>
+  <data name="SavePresetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Save Preset</value>
+  </data>
+  <data name="DeletePresetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Delete Preset</value>
+  </data>
+
+  <!-- Queue Page -->
+    <data name="QueueTitle.Text" xml:space="preserve">
+        <value>Conversion Queue</value>
+    </data>
+    <data name="StartButton.Content" xml:space="preserve">
+        <value>Start</value>
+    </data>
+    <data name="PauseButton.Content" xml:space="preserve">
+        <value>Pause</value>
+    </data>
+    <data name="ClearButton.Content" xml:space="preserve">
+        <value>Clear Queue</value>
+    </data>
 
   <!-- Dashboard Page -->
   <data name="DashboardTitle.Text" xml:space="preserve">
@@ -132,5 +158,20 @@
   </data>
   <data name="CheckForUpdatesButton.Content" xml:space="preserve">
     <value>Check for Updates</value>
+  </data>
+  <data name="ThemeLight.Content" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark.Content" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="ThemeDefault.Content" xml:space="preserve">
+    <value>System Default</value>
+  </data>
+  <data name="LangPortuguese.Content" xml:space="preserve">
+    <value>Portuguese</value>
+  </data>
+  <data name="LangEnglish.Content" xml:space="preserve">
+    <value>English</value>
   </data>
 </root>

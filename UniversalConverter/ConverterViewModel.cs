@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.ObjectModel;
@@ -13,13 +12,13 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.Storage;
 using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace UniversalConverter
 {
     public class ConverterViewModel : INotifyPropertyChanged
     {
-        private readonly ImageConverter _imageConverter = new ImageConverter();
+        private readonly ImageConverter _imageConverter;
+        private readonly IWindowService _windowService;
         private StorageFile _selectedFile;
         private BitmapImage _originalPreviewImage;
         private BitmapImage _convertedPreviewImage;
@@ -39,8 +38,10 @@ namespace UniversalConverter
         public ICommand RotateRightCommand { get; }
         public ICommand OptionChangedCommand { get; }
 
-        public ConverterViewModel()
+        public ConverterViewModel(IWindowService windowService, ImageConverter imageConverter)
         {
+            _windowService = windowService;
+            _imageConverter = imageConverter;
             SelectFileCommand = new RelayCommand(async _ => await SelectFileAsync());
             SelectFolderCommand = new RelayCommand(async _ => await SelectFolderAsync());
             ConvertCommand = new RelayCommand(async _ => await ConvertFileAsync(), _ => CanConvert());
@@ -116,7 +117,7 @@ namespace UniversalConverter
         private async Task SelectFileAsync()
         {
             var fileOpenPicker = new FileOpenPicker { FileTypeFilter = { ".webp", ".gif", ".jpg", ".jpeg", ".png" } };
-            InitializeWithWindow.Initialize(fileOpenPicker, App.m_window.GetWindowHandle());
+            _windowService.InitializeWithWindow(fileOpenPicker);
             var file = await fileOpenPicker.PickSingleFileAsync();
             if (file != null) await HandleDroppedFileAsync(file);
         }
@@ -124,7 +125,7 @@ namespace UniversalConverter
         private async Task SelectFolderAsync()
         {
             var sourcePicker = new FolderPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
-            InitializeWithWindow.Initialize(sourcePicker, App.m_window.GetWindowHandle());
+            _windowService.InitializeWithWindow(sourcePicker);
             StorageFolder sourceFolder = await sourcePicker.PickSingleFolderAsync();
             if (sourceFolder != null) await ProcessBatchConversionAsync(sourceFolder);
         }
@@ -133,7 +134,7 @@ namespace UniversalConverter
         {
             var fileSavePicker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary, SuggestedFileName = Path.GetFileNameWithoutExtension(SelectedFile.Name) };
             fileSavePicker.FileTypeChoices.Add($"{SelectedOutputFormat} Image", new[] { $".{SelectedOutputFormat.ToLower()}" });
-            InitializeWithWindow.Initialize(fileSavePicker, App.m_window.GetWindowHandle());
+            _windowService.InitializeWithWindow(fileSavePicker);
 
             StorageFile destinationFile = await fileSavePicker.PickSaveFileAsync();
             if (destinationFile != null)
@@ -142,9 +143,9 @@ namespace UniversalConverter
                 {
                     _imageConverter.ConvertImage(SelectedFile.Path, destinationFile.Path, Options);
                     await StatsService.RecordConversion();
-                    await ShowContentDialog("Success", "Image converted successfully!");
+                    await _windowService.ShowContentDialogAsync("Success", "Image converted successfully!");
                 }
-                catch (Exception ex) { await ShowContentDialog("Error", $"An error occurred: {ex.Message}"); }
+                catch (Exception ex) { await _windowService.ShowContentDialogAsync("Error", $"An error occurred: {ex.Message}"); }
             }
         }
 
@@ -164,7 +165,7 @@ namespace UniversalConverter
         {
             _isPresetBeingApplied = true;
             Options = preset.Options;
-            OnPropertyChanged(nameof(Options)); // Notify that the whole options object has changed
+            OnPropertyChanged(nameof(Options));
             _isPresetBeingApplied = false;
             UpdatePreviewAsync().AsTask();
         }
@@ -172,7 +173,8 @@ namespace UniversalConverter
         private async Task SavePresetAsync()
         {
             var nameTextBox = new TextBox { PlaceholderText = "Preset Name" };
-            var dialog = new ContentDialog { Title = "Save Preset", Content = nameTextBox, PrimaryButtonText = "Save", CloseButtonText = "Cancel", XamlRoot = (App.m_window.Content as FrameworkElement).XamlRoot };
+            var dialog = new ContentDialog { Title = "Save Preset", Content = nameTextBox, PrimaryButtonText = "Save", CloseButtonText = "Cancel" };
+            _windowService.InitializeWithWindow(dialog);
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary && !string.IsNullOrWhiteSpace(nameTextBox.Text))
             {
@@ -240,7 +242,7 @@ namespace UniversalConverter
             catch (Exception ex)
             {
                 ConvertedPreviewImage = null;
-                await ShowContentDialog("Preview Error", $"An error occurred while generating the preview: {ex.Message}");
+                await _windowService.ShowContentDialogAsync("Preview Error", $"An error occurred while generating the preview: {ex.Message}");
             }
         }
 
@@ -254,7 +256,7 @@ namespace UniversalConverter
         private async Task ProcessBatchConversionAsync(StorageFolder sourceFolder)
         {
             var destinationPicker = new FolderPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
-            InitializeWithWindow.Initialize(destinationPicker, App.m_window.GetWindowHandle());
+            _windowService.InitializeWithWindow(destinationPicker);
             StorageFolder destinationFolder = await destinationPicker.PickSingleFolderAsync();
             if (destinationFolder == null) return;
 
@@ -265,7 +267,7 @@ namespace UniversalConverter
 
             IsBusy = false;
 
-            if (App.m_window is MainWindow mainWindow)
+            if (App.m_window.Content is MainWindow mainWindow)
             {
                 mainWindow.NavigateToPage(typeof(QueuePage));
             }
@@ -279,7 +281,7 @@ namespace UniversalConverter
                 if (item is StorageFolder subFolder)
                 {
                     var newDestFolder = destinationFolder;
-                    if (Options.KeepFolderStructure) // Assuming this option is added
+                    if (Options.KeepFolderStructure)
                     {
                         newDestFolder = await destinationFolder.CreateFolderAsync(subFolder.Name, CreationCollisionOption.OpenIfExists);
                     }
@@ -305,12 +307,6 @@ namespace UniversalConverter
                     }
                 }
             }
-        }
-
-        private async Task ShowContentDialog(string title, string content)
-        {
-            var dialog = new ContentDialog { Title = title, Content = content, CloseButtonText = "Ok", XamlRoot = (App.m_window.Content as FrameworkElement).XamlRoot };
-            await dialog.ShowAsync();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
