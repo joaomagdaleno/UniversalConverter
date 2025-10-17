@@ -7,9 +7,9 @@
     <ProjectReference Include="..\UniversalConverter\UniversalConverter.csproj" />
   </ItemGroup>
   <PropertyGroup>
-    <WapProjPath Condition="'$(WapProjPath)'==''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\Microsoft.DesktopBridge.props</WapProjPath>
+    <WapProjPath Condition="'$(WapProjPath)'==''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge</WapProjPath>
   </PropertyGroup>
-  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" Condition="Exists('$(WapProjPath)\Microsoft.DesktopBridge.props')" />
   <PropertyGroup>
     <ProjectGuid>d7c73a2a-4a99-4d33-9a3d-1d68f76326a5</ProjectGuid>
     <TargetPlatformVersion>10.0.19041.0</TargetPlatformVersion>
