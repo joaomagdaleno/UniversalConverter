@@ -12,13 +12,14 @@ namespace UniversalConverter
     public class ConversionOptions
     {
         public int WebpQuality { get; set; } = 75;
-        public ushort GifRepeatCount { get; set; } = 0;
+        public bool GifLoop { get; set; } = true;
         public int JpgQuality { get; set; } = 75;
-        public PngCompressionLevel PngCompression { get; set; } = PngCompressionLevel.Default;
+        public int PngCompression { get; set; } = 6;
         public int Width { get; set; } = 0;
         public int Height { get; set; } = 0;
         public bool KeepAspectRatio { get; set; } = true;
         public RotateMode Rotate { get; set; } = RotateMode.None;
+        public bool KeepFolderStructure { get; set; } = false;
     }
 
     public class ImageConverter
@@ -64,7 +65,7 @@ namespace UniversalConverter
                     case ".gif":
                         var gifQuantizer = new WuQuantizer(new QuantizerOptions { MaxColors = 255, Dither = new FloydSteinbergDither() });
                         var gifEncoder = new GifEncoder { Quantizer = gifQuantizer };
-                        image.Metadata.GetGifMetadata().RepeatCount = options.GifRepeatCount;
+                        image.Metadata.GetGifMetadata().RepeatCount = options.GifLoop ? (ushort)0 : (ushort)1;
                         image.SaveAsGif(outputStream, gifEncoder);
                         break;
                     case ".webp":
@@ -75,10 +76,10 @@ namespace UniversalConverter
                         image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = options.JpgQuality });
                         break;
                     case ".png":
-                        image.SaveAsPng(outputStream, new PngEncoder { CompressionLevel = options.PngCompression });
+                        image.SaveAsPng(outputStream, new PngEncoder { CompressionLevel = (PngCompressionLevel)options.PngCompression });
                         break;
                     default:
-                        throw new NotSupportedException($"Formato de saída '{outputExtension}' não é suportado.");
+                        throw new NotSupportedException($"Output format '{outputExtension}' is not supported.");
                 }
 
                 outputStream.Position = 0;
