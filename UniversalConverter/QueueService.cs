@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,26 +43,29 @@ namespace UniversalConverter
 
         private static async Task ProcessQueueAsync(CancellationToken token)
         {
-            foreach (var item in Queue)
+            var pendingItems = Queue.Where(i => i.Status == QueueStatus.Pending).ToList();
+
+            foreach (var item in pendingItems)
             {
                 if (token.IsCancellationRequested)
                 {
                     break;
                 }
 
-                if (item.Status == QueueStatus.Pending)
+                item.Status = QueueStatus.InProgress;
+                try
                 {
-                    item.Status = QueueStatus.InProgress;
-                    try
-                    {
-                        await Task.Run(() => _converter.ConvertImage(item.SourcePath, item.DestinationPath, item.Options));
-                        item.Status = QueueStatus.Completed;
-                    }
-                    catch (System.Exception ex)
-                    {
-                        item.Status = QueueStatus.Failed;
-                        item.Message = ex.Message;
-                    }
+                    await Task.Run(() => _converter.ConvertImage(item.SourcePath, item.DestinationPath, item.Options), token);
+                    item.Status = QueueStatus.Completed;
+                }
+                catch (System.OperationCanceledException)
+                {
+                    item.Status = QueueStatus.Pending;
+                }
+                catch (System.Exception ex)
+                {
+                    item.Status = QueueStatus.Failed;
+                    item.Message = ex.Message;
                 }
             }
             IsRunning = false;
