@@ -11,6 +11,9 @@ using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using WinRT.Interop;
 using SixLabors.ImageSharp.Formats.Png;
+using System.Collections.ObjectModel;
+using SixLabors.ImageSharp.Processing;
+using Microsoft.UI.Xaml.Navigation;
 
 namespace UniversalConverter
 {
@@ -18,15 +21,30 @@ namespace UniversalConverter
     {
         private StorageFile selectedFile;
         private readonly ImageConverter imageConverter = new ImageConverter();
+        private readonly ObservableCollection<ConversionPreset> Presets = new ObservableCollection<ConversionPreset>();
+        private bool _isPresetBeingApplied = false;
+        private RotateMode _currentRotation = RotateMode.None;
 
         public ConverterPage()
         {
             this.InitializeComponent();
+            SetupEventHandlers();
+            PresetComboBox.ItemsSource = Presets;
+            Loaded += async (s, e) => await LoadPresetsAsync();
+        }
+
+        private void SetupEventHandlers()
+        {
             SelectFileButton.Click += SelectFileButton_Click;
             SelectFolderButton.Click += SelectFolderButton_Click;
             ConvertButton.Click += ConvertButton_Click;
             this.DragLeave += (s, e) => DragDropOverlay.Visibility = Visibility.Collapsed;
             ConvertButton.IsEnabled = false;
+
+            PresetComboBox.SelectionChanged += PresetComboBox_SelectionChanged;
+            SavePresetButton.Click += SavePresetButton_Click;
+            DeletePresetButton.Click += DeletePresetButton_Click;
+
             OutputFormatComboBox.SelectionChanged += Option_Changed;
             WebpQualitySlider.ValueChanged += Option_Changed;
             JpgQualitySlider.ValueChanged += Option_Changed;
@@ -35,11 +53,89 @@ namespace UniversalConverter
             WidthNumberBox.LostFocus += Option_Changed;
             HeightNumberBox.LostFocus += Option_Changed;
             AspectRatioCheckBox.Click += Option_Changed;
+            RotateLeftButton.Click += RotateLeftButton_Click;
+            RotateRightButton.Click += RotateRightButton_Click;
+
             UpdateOptionsUI();
+        }
+
+        private void RotateLeftButton_Click(object sender, RoutedEventArgs e)
+        {
+            _currentRotation = GetNewRotation(RotateMode.Rotate270);
+            UpdatePreviewAsync().AsTask();
+        }
+
+        private void RotateRightButton_Click(object sender, RoutedEventArgs e)
+        {
+            _currentRotation = GetNewRotation(RotateMode.Rotate90);
+            UpdatePreviewAsync().AsTask();
+        }
+
+        private RotateMode GetNewRotation(RotateMode rotation)
+        {
+            int current = (int)_currentRotation;
+            int add = (int)rotation;
+            return (RotateMode)((current + add) % 4);
+        }
+
+        private async Task LoadPresetsAsync()
+        {
+            Presets.Clear();
+            foreach (var preset in PresetService.Presets)
+            {
+                Presets.Add(preset);
+            }
+        }
+
+        private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PresetComboBox.SelectedItem is ConversionPreset selectedPreset)
+            {
+                _isPresetBeingApplied = true;
+                ApplyPreset(selectedPreset.Options);
+                _isPresetBeingApplied = false;
+                UpdatePreviewAsync().AsTask();
+            }
+        }
+
+        private void ApplyPreset(ConversionOptions options)
+        {
+            _currentRotation = options.Rotate;
+            WebpQualitySlider.Value = options.WebpQuality;
+            JpgQualitySlider.Value = options.JpgQuality;
+            PngCompressionSlider.Value = (int)options.PngCompression;
+            GifLoopCheckBox.IsChecked = options.GifRepeatCount == 0;
+            WidthNumberBox.Value = options.Width;
+            HeightNumberBox.Value = options.Height;
+            AspectRatioCheckBox.IsChecked = options.KeepAspectRatio;
+        }
+
+        private async void SavePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            var nameTextBox = new TextBox { PlaceholderText = "Nome do Perfil" };
+            var dialog = new ContentDialog { Title = "Salvar Perfil", Content = nameTextBox, PrimaryButtonText = "Salvar", CloseButtonText = "Cancelar", XamlRoot = this.XamlRoot };
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary && !string.IsNullOrWhiteSpace(nameTextBox.Text))
+            {
+                var newPreset = new ConversionPreset { Name = nameTextBox.Text, Options = GetCurrentConversionOptions() };
+                await PresetService.AddPresetAsync(newPreset);
+                await LoadPresetsAsync();
+                PresetComboBox.SelectedItem = Presets.FirstOrDefault(p => p.Name == newPreset.Name);
+            }
+        }
+
+        private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (PresetComboBox.SelectedItem is ConversionPreset selectedPreset)
+            {
+                await PresetService.DeletePresetAsync(selectedPreset.Name);
+                await LoadPresetsAsync();
+            }
         }
 
         private async void Option_Changed(object sender, object e)
         {
+            if (_isPresetBeingApplied) return;
             if (sender is ComboBox) UpdateOptionsUI();
             await UpdatePreviewAsync();
         }
@@ -85,6 +181,7 @@ namespace UniversalConverter
         private async Task HandleDroppedFile(StorageFile file)
         {
             selectedFile = file;
+            _currentRotation = RotateMode.None;
             PreviewTextBlock.Visibility = Visibility.Collapsed;
             OriginalPreviewImage.Source = new BitmapImage(new Uri(file.Path));
             ConvertButton.IsEnabled = true;
@@ -139,7 +236,7 @@ namespace UniversalConverter
                 try
                 {
                     imageConverter.ConvertImage(selectedFile.Path, destinationFile.Path, GetCurrentConversionOptions());
-                    StatsService.RecordConversion();
+                    await StatsService.RecordConversion();
                     await ShowContentDialog("Sucesso", "A imagem foi convertida com sucesso!");
                 }
                 catch (Exception ex) { await ShowContentDialog("Erro", $"Ocorreu um erro: {ex.Message}"); }
@@ -166,40 +263,44 @@ namespace UniversalConverter
                 return;
             }
 
-            int successCount = 0, failCount = 0;
-            await ProcessFolderRecursively(sourceFolder, sourceFolder.Path, destinationFolder, selectedFormat);
+            QueueService.ClearQueue();
+            await AddFolderToQueueRecursively(sourceFolder, sourceFolder, destinationFolder, selectedFormat);
 
-            async Task ProcessFolderRecursively(StorageFolder currentFolder, string rootPath, StorageFolder currentDestFolder, string outputFormat)
+            var mainWindow = App.m_window as MainWindow;
+            mainWindow?.NavigateToPage(typeof(QueuePage));
+        }
+
+        private async Task AddFolderToQueueRecursively(StorageFolder currentFolder, StorageFolder rootSourceFolder, StorageFolder currentDestinationFolder, string outputFormat)
+        {
+            var items = await currentFolder.GetItemsAsync();
+            foreach (var item in items)
             {
-                var items = await currentFolder.GetItemsAsync();
-                foreach (var item in items)
+                if (item is StorageFolder subFolder && KeepStructureCheckBox.IsChecked == true)
                 {
-                    if (item is StorageFolder subFolder && KeepStructureCheckBox.IsChecked == true)
+                    var newDestFolder = await currentDestinationFolder.CreateFolderAsync(subFolder.Name, CreationCollisionOption.OpenIfExists);
+                    await AddFolderToQueueRecursively(subFolder, rootSourceFolder, newDestFolder, outputFormat);
+                }
+                else if (item is StorageFile file)
+                {
+                    var validExtensions = new[] { ".webp", ".gif", ".jpg", ".jpeg", ".png" };
+                    string inputExtension = Path.GetExtension(file.Name).ToLower();
+                    string outputExtension = $".{outputFormat.ToLower()}";
+
+                    if (validExtensions.Contains(inputExtension) && inputExtension != outputExtension)
                     {
-                        var newDestFolder = await currentDestFolder.CreateFolderAsync(subFolder.Name, CreationCollisionOption.OpenIfExists);
-                        await ProcessFolderRecursively(subFolder, rootPath, newDestFolder, outputFormat);
-                    }
-                    else if (item is StorageFile file)
-                    {
-                        var validExtensions = new[] { ".webp", ".gif", ".jpg", ".jpeg", ".png" };
-                        string inputExtension = Path.GetExtension(file.Name).ToLower();
-                        string outputExtension = $".{outputFormat.ToLower()}";
-                        if (validExtensions.Contains(inputExtension) && inputExtension != outputExtension)
+                        string newFileName = Path.ChangeExtension(file.Name, outputExtension);
+
+                        var queueItem = new QueueItem
                         {
-                            try
-                            {
-                                string newFileName = Path.GetFileNameWithoutExtension(file.Name) + outputExtension;
-                                StorageFile newFile = await currentDestFolder.CreateFileAsync(newFileName, CreationCollisionOption.GenerateUniqueName);
-                                imageConverter.ConvertImage(file.Path, newFile.Path, GetCurrentConversionOptions());
-                                StatsService.RecordConversion();
-                                successCount++;
-                            }
-                            catch { failCount++; }
-                        }
+                            SourcePath = file.Path,
+                            DestinationPath = Path.Combine(currentDestinationFolder.Path, newFileName),
+                            Options = GetCurrentConversionOptions(),
+                            Status = QueueStatus.Pending
+                        };
+                        QueueService.AddToQueue(queueItem);
                     }
                 }
             }
-            await ShowContentDialog("Conversão em Lote Concluída", $"{successCount} arquivos convertidos com sucesso.\n{failCount} falhas.");
         }
 
         private ConversionOptions GetCurrentConversionOptions()
@@ -212,7 +313,8 @@ namespace UniversalConverter
                 PngCompression = (PngCompressionLevel)Convert.ToInt32(PngCompressionSlider.Value),
                 Width = (int)WidthNumberBox.Value,
                 Height = (int)HeightNumberBox.Value,
-                KeepAspectRatio = AspectRatioCheckBox.IsChecked == true
+                KeepAspectRatio = AspectRatioCheckBox.IsChecked == true,
+                Rotate = _currentRotation
             };
         }
 
@@ -220,6 +322,15 @@ namespace UniversalConverter
         {
             var dialog = new ContentDialog { Title = title, Content = content, CloseButtonText = "Ok", XamlRoot = this.XamlRoot };
             await dialog.ShowAsync();
+        }
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            if (e.Parameter is StorageFile file)
+            {
+                await HandleDroppedFile(file);
+            }
         }
     }
 }

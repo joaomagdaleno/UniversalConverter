@@ -16,6 +16,7 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Uid="DashboardNav" Tag="DashboardPage" Icon="Home"/>
                 <NavigationViewItem x:Uid="ConverterNav" Tag="ConverterPage" Icon="Switch"/>
+                <NavigationViewItem x:Uid="QueueNav" Tag="QueuePage" Icon="Download"/>
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame"/>

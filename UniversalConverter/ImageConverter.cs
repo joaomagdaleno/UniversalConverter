@@ -18,6 +18,7 @@ namespace UniversalConverter
         public int Width { get; set; } = 0;
         public int Height { get; set; } = 0;
         public bool KeepAspectRatio { get; set; } = true;
+        public RotateMode Rotate { get; set; } = RotateMode.None;
     }
 
     public class ImageConverter
@@ -37,15 +38,23 @@ namespace UniversalConverter
         {
             using (Image image = Image.Load(inputPath))
             {
-                if (options.Width > 0 || options.Height > 0)
+                image.Mutate(x =>
                 {
-                    var resizeOptions = new ResizeOptions
+                    if (options.Rotate != RotateMode.None)
                     {
-                        Size = new Size(options.Width, options.Height),
-                        Mode = options.KeepAspectRatio ? ResizeMode.Max : ResizeMode.Stretch
-                    };
-                    image.Mutate(x => x.Resize(resizeOptions));
-                }
+                        x.Rotate(options.Rotate);
+                    }
+
+                    if (options.Width > 0 || options.Height > 0)
+                    {
+                        var resizeOptions = new ResizeOptions
+                        {
+                            Size = new Size(options.Width, options.Height),
+                            Mode = options.KeepAspectRatio ? ResizeMode.Max : ResizeMode.Stretch
+                        };
+                        x.Resize(resizeOptions);
+                    }
+                });
 
                 var outputStream = new MemoryStream();
                 outputExtension = outputExtension.ToLower();

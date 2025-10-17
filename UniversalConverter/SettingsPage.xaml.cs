@@ -15,8 +15,21 @@ namespace UniversalConverter
             CheckForUpdatesButton.Click += CheckForUpdatesButton_Click;
             ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
             LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
+            NotificationsToggle.Toggled += NotificationsToggle_Toggled;
             LoadThemeSetting();
             LoadLanguageSetting();
+            LoadNotificationsSetting();
+        }
+
+        private void NotificationsToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            ApplicationData.Current.LocalSettings.Values["notifications"] = NotificationsToggle.IsOn;
+        }
+
+        private void LoadNotificationsSetting()
+        {
+            var savedNotifications = ApplicationData.Current.LocalSettings.Values["notifications"] as bool?;
+            NotificationsToggle.IsOn = savedNotifications ?? false;
         }
 
         private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

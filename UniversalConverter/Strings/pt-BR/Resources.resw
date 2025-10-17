@@ -25,6 +25,9 @@
   <data name="ConverterNav.Content" xml:space="preserve">
     <value>Converter</value>
   </data>
+  <data name="QueueNav.Content" xml:space="preserve">
+    <value>Fila</value>
+  </data>
 
   <!-- Converter Page -->
   <data name="ConverterTitle.Text" xml:space="preserve">
@@ -57,8 +60,14 @@
   <data name="GifLoopCheckBox.Content" xml:space="preserve">
     <value>Loop Infinito (GIF)</value>
   </data>
+  <data name="TransformsTitle.Text" xml:space="preserve">
+    <value>Transformações</value>
+  </data>
   <data name="ResizeTitle.Text" xml:space="preserve">
-    <value>Redimensionamento</value>
+    <value>Redimensionar</value>
+  </data>
+  <data name="RotateTitle.Text" xml:space="preserve">
+    <value>Girar</value>
   </data>
   <data name="WidthNumberBox.Header" xml:space="preserve">
     <value>Largura (px)</value>
@@ -115,8 +124,11 @@
   <data name="LanguageComboBox.Header" xml:space="preserve">
     <value>Idioma</value>
   </data>
-  <data name="UpdatesTitle.Text" xml:space="preserve">
-    <value>Atualizações</value>
+  <data name="NotificationsUpdatesTitle.Text" xml:space="preserve">
+    <value>Notificações e Atualizações</value>
+  </data>
+  <data name="NotificationsToggle.Header" xml:space="preserve">
+    <value>Habilitar notificações ao concluir conversão em lote</value>
   </data>
   <data name="CheckForUpdatesButton.Content" xml:space="preserve">
     <value>Verificar Atualizações</value>

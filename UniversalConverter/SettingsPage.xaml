@@ -30,7 +30,8 @@
         </StackPanel>
 
         <StackPanel Spacing="10">
-            <TextBlock x:Uid="UpdatesTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <TextBlock x:Uid="NotificationsUpdatesTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <ToggleSwitch x:Name="NotificationsToggle" x:Uid="NotificationsToggle" Toggled="NotificationsToggle_Toggled"/>
             <Button x:Name="CheckForUpdatesButton" x:Uid="CheckForUpdatesButton"/>
         </StackPanel>
     </StackPanel>

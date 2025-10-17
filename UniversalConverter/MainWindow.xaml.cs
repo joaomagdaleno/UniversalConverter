@@ -13,11 +13,21 @@ namespace UniversalConverter
             ContentFrame.Navigate(typeof(DashboardPage));
         }
 
+        public void NavigateToPage(Type pageType)
+        {
+            ContentFrame.Navigate(pageType);
+        }
+
+        public void NavigateToPageWithParameter(Type pageType, object parameter)
+        {
+            ContentFrame.Navigate(pageType, parameter);
+        }
+
         private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             if (args.IsSettingsInvoked)
             {
-                ContentFrame.Navigate(typeof(SettingsPage));
+                NavigateToPage(typeof(SettingsPage));
             }
             else
             {
@@ -28,10 +38,13 @@ namespace UniversalConverter
                     switch (tag)
                     {
                         case "DashboardPage":
-                            ContentFrame.Navigate(typeof(DashboardPage));
+                            NavigateToPage(typeof(DashboardPage));
                             break;
                         case "ConverterPage":
-                            ContentFrame.Navigate(typeof(ConverterPage));
+                            NavigateToPage(typeof(ConverterPage));
+                            break;
+                        case "QueuePage":
+                            NavigateToPage(typeof(QueuePage));
                             break;
                     }
                 }

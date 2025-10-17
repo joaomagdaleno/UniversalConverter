@@ -20,6 +20,15 @@
         <StackPanel Grid.Row="0" Orientation="Vertical" Spacing="10">
             <TextBlock x:Uid="ConverterTitle" Style="{StaticResource TitleTextBlockStyle}"/>
             <StackPanel Orientation="Horizontal" Spacing="10">
+                <ComboBox x:Name="PresetComboBox" x:Uid="PresetComboBox" Header="Perfis" Width="200" SelectionChanged="PresetComboBox_SelectionChanged"/>
+                <Button x:Name="SavePresetButton" x:Uid="SavePresetButton" Click="SavePresetButton_Click">
+                    <SymbolIcon Symbol="Save"/>
+                </Button>
+                <Button x:Name="DeletePresetButton" x:Uid="DeletePresetButton" Click="DeletePresetButton_Click">
+                    <SymbolIcon Symbol="Delete"/>
+                </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button x:Name="SelectFileButton">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <SymbolIcon Symbol="OpenFile"/>
@@ -51,11 +60,31 @@
         </StackPanel>
 
         <StackPanel Grid.Row="2" Orientation="Vertical" Spacing="10" Margin="0,20,0,0">
-            <TextBlock x:Uid="ResizeTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <NumberBox x:Name="WidthNumberBox" x:Uid="WidthNumberBox" Value="0" Width="120" SpinButtonPlacementMode="Compact"/>
-                <NumberBox x:Name="HeightNumberBox" x:Uid="HeightNumberBox" Value="0" Width="120" SpinButtonPlacementMode="Compact"/>
-                <CheckBox x:Name="AspectRatioCheckBox" x:Uid="AspectRatioCheckBox" IsChecked="True" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
+            <TextBlock x:Uid="TransformsTitle" Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <StackPanel Spacing="5">
+                    <TextBlock x:Uid="ResizeTitle" Style="{StaticResource CaptionTextBlockStyle}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <NumberBox x:Name="WidthNumberBox" x:Uid="WidthNumberBox" Value="0" Width="120" SpinButtonPlacementMode="Compact"/>
+                        <NumberBox x:Name="HeightNumberBox" x:Uid="HeightNumberBox" Value="0" Width="120" SpinButtonPlacementMode="Compact"/>
+                        <CheckBox x:Name="AspectRatioCheckBox" x:Uid="AspectRatioCheckBox" IsChecked="True" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="5">
+                    <TextBlock x:Uid="RotateTitle" Style="{StaticResource CaptionTextBlockStyle}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="RotateLeftButton" x:Uid="RotateLeftButton" Click="RotateLeftButton_Click">
+                            <SymbolIcon Symbol="Rotate"/>
+                        </Button>
+                        <Button x:Name="RotateRightButton" x:Uid="RotateRightButton" Click="RotateRightButton_Click">
+                            <SymbolIcon Symbol="Rotate">
+                                <SymbolIcon.RenderTransform>
+                                    <ScaleTransform ScaleX="-1" />
+                                </SymbolIcon.RenderTransform>
+                            </SymbolIcon>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
             </StackPanel>
         </StackPanel>
 
