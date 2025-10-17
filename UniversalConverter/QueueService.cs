@@ -69,6 +69,9 @@ namespace UniversalConverter
                     {
                         await Task.Run(() => _converter.ConvertImage(item.SourcePath, item.DestinationPath, item.Options));
                         
+                        // Record the conversion in statistics
+                        await StatsService.RecordConversion();
+                        
                         // Update status on UI thread
                         _dispatcherQueue?.TryEnqueue(() => item.Status = QueueStatus.Completed);
                     }

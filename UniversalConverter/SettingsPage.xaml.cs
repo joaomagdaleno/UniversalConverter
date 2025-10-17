@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using Windows.ApplicationModel;
+using Windows.Management.Deployment;
 using Windows.Storage;
 
 namespace UniversalConverter
