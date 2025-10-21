@@ -5,6 +5,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalConverter", "UniversalConverter\UniversalConverter.csproj", "{A3E8ED8A-BF43-429D-834B-463154863435}"
 EndProject
 Project("{WAPPROJECT}") = "UniversalConverter.Packager", "UniversalConverter.Packager\UniversalConverter.Packager.wapproj", "{C04B76A6-376A-458A-9A47-2A47A5A88125}"
+	ProjectSection(ProjectDependencies) = preProject
+		{A3E8ED8A-BF43-429D-834B-463154863435} = {A3E8ED8A-BF43-429D-834B-463154863435}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
