@@ -18,6 +18,7 @@
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
     <PackageCertificateKeyFile>UniversalConverter.Packager_TemporaryKey.pfx</PackageCertificateKeyFile>
     <EntryPointProjectUniqueName>..\UniversalConverter\UniversalConverter.csproj</EntryPointProjectUniqueName>
+    <Platforms>x86;x64;ARM64</Platforms>
   </PropertyGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
 </Project>
