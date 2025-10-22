@@ -181,7 +181,7 @@ def main(page: ft.Page):
         output_dir_text = ft.Text("Nenhuma pasta selecionada")
         progress_bar = ft.ProgressBar(width=400, value=0)
         status_label = ft.Text("")
-        convert_button = ft.ElevatedButton("Converter", icon=ft.icons.SWAP_HORIZ)
+        convert_button = ft.ElevatedButton("Converter", icon=ft.Icons.SWAP_HORIZ)
         settings_controls = create_settings_controls(mode, page)
 
         def on_files_selected(e: ft.FilePickerResultEvent):
@@ -254,7 +254,7 @@ def main(page: ft.Page):
                 ft.Column([
                     ft.Text("1. Selecione os Arquivos", weight=ft.FontWeight.BOLD),
                     ft.Row([
-                        ft.ElevatedButton("Selecionar Arquivos", icon=ft.icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=[file_extension])),
+                        ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=[file_extension])),
                     ]),
                     selected_files_text
                 ]),
@@ -264,7 +264,7 @@ def main(page: ft.Page):
                 ft.Column([
                     ft.Text("2. Escolha o Destino", weight=ft.FontWeight.BOLD),
                     ft.Row([
-                        ft.ElevatedButton("Escolher Pasta de Destino", icon=ft.icons.FOLDER_SPECIAL, on_click=lambda _: output_dir_picker.get_directory_path()),
+                        ft.ElevatedButton("Escolher Pasta de Destino", icon=ft.Icons.FOLDER_SPECIAL, on_click=lambda _: output_dir_picker.get_directory_path()),
                     ]),
                     output_dir_text
                 ]),
@@ -317,9 +317,9 @@ def main(page: ft.Page):
         leading=ft.Text("Menu", size=16, weight=ft.FontWeight.BOLD),
         group_alignment=-0.9,
         destinations=[
-            ft.NavigationRailDestination(icon=ft.icons.DASHBOARD_OUTLINED, selected_icon=ft.icons.DASHBOARD, label="Dashboard"),
-            ft.NavigationRailDestination(icon=ft.icons.SETTINGS_OUTLINED, selected_icon=ft.icons.SETTINGS, label="Configurações"),
-            ft.NavigationRailDestination(icon_content=ft.Icon(ft.icons.INFO_OUTLINE), selected_icon_content=ft.Icon(ft.icons.INFO), label="Sobre"),
+            ft.NavigationRailDestination(icon=ft.Icons.DASHBOARD_OUTLINED, selected_icon=ft.Icons.DASHBOARD, label="Dashboard"),
+            ft.NavigationRailDestination(icon=ft.Icons.SETTINGS_OUTLINED, selected_icon=ft.Icons.SETTINGS, label="Configurações"),
+            ft.NavigationRailDestination(icon_content=ft.Icon(ft.Icons.INFO_OUTLINE), selected_icon_content=ft.Icon(ft.Icons.INFO), label="Sobre"),
         ],
         on_change=lambda e: show_view("dashboard") if e.control.selected_index == 0 else None,
     )
