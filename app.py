@@ -319,7 +319,7 @@ def main(page: ft.Page):
         destinations=[
             ft.NavigationRailDestination(icon=ft.Icons.DASHBOARD_OUTLINED, selected_icon=ft.Icons.DASHBOARD, label="Dashboard"),
             ft.NavigationRailDestination(icon=ft.Icons.SETTINGS_OUTLINED, selected_icon=ft.Icons.SETTINGS, label="Configurações"),
-            ft.NavigationRailDestination(icon_content=ft.Icon(ft.Icons.INFO_OUTLINE), selected_icon_content=ft.Icon(ft.Icons.INFO), label="Sobre"),
+            ft.NavigationRailDestination(icon=ft.Icons.INFO_OUTLINE, selected_icon=ft.Icons.INFO, label="Sobre"),
         ],
         on_change=lambda e: show_view("dashboard") if e.control.selected_index == 0 else None,
     )
