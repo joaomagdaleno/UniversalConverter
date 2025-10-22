@@ -1,6 +1,132 @@
 import flet as ft
 import os
 import threading
+import requests
+import subprocess
+import sys
+import tempfile
+from packaging.version import parse as parse_version
+
+# --- Constants ---
+REPO_NAME = "joaomagdaleno/UniversalConverter"
+VERSION_FILE = "VERSION.txt"
+
+# --- Update Manager ---
+class UpdateManager:
+    def __init__(self, page: ft.Page):
+        self.page = page
+        self.current_version = self.get_current_version()
+        self.repo_url = f"https://api.github.com/repos/{REPO_NAME}/releases/latest"
+
+        # Dialogs for update flow
+        self.update_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Atualização Disponível"),
+            content=ft.Text(""),  # Will be filled with the new version info
+            actions=[
+                ft.TextButton("Agora não", on_click=self.close_dialog),
+                ft.FilledButton("Atualizar", on_click=self.start_download),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.progress_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Baixando Atualização..."),
+            content=ft.Column([
+                ft.Text("Por favor, aguarde."),
+                ft.ProgressBar(width=400, value=None) # Indeterminate progress
+            ], tight=True, spacing=10),
+        )
+
+    def get_current_version(self):
+        try:
+            # When running as a script, the path is correct.
+            # When packaged with PyInstaller, the file is in sys._MEIPASS.
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            version_path = os.path.join(base_path, VERSION_FILE)
+            with open(version_path, 'r') as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return "0.0.0" # Fallback version
+
+    def check_for_updates_thread(self):
+        if not self.current_version or self.current_version == "0.0.0":
+            return # Don't check if we don't know the current version
+
+        try:
+            response = requests.get(self.repo_url, timeout=10)
+            response.raise_for_status()
+            latest_release = response.json()
+            latest_version_str = latest_release.get("tag_name", "").lstrip('v')
+
+            if not latest_version_str:
+                return
+
+            current_v = parse_version(self.current_version)
+            latest_v = parse_version(latest_version_str)
+
+            if latest_v > current_v:
+                assets = latest_release.get("assets", [])
+                msi_asset = next((asset for asset in assets if asset['name'].endswith('.msi')), None)
+                if msi_asset:
+                    self.latest_version_info = {
+                        "version": latest_version_str,
+                        "url": msi_asset['browser_download_url'],
+                        "name": msi_asset['name']
+                    }
+                    self.page.run_threadsafe(self.show_update_dialog)
+
+        except (requests.RequestException, ValueError) as e:
+            print(f"Update check failed: {e}") # Log error for debugging
+
+    def show_update_dialog(self):
+        self.update_dialog.content.value = f"Uma nova versão ({self.latest_version_info['version']}) está disponível. Deseja baixar e instalar?"
+        self.page.dialog = self.update_dialog
+        self.update_dialog.open = True
+        self.page.update()
+
+    def close_dialog(self, e):
+        self.page.dialog.open = False
+        self.page.update()
+
+    def start_download(self, e):
+        self.close_dialog(e) # Close the confirmation dialog
+        self.page.dialog = self.progress_dialog
+        self.progress_dialog.open = True
+        self.page.update()
+
+        # Start download in a new thread
+        download_thread = threading.Thread(target=self.download_and_install_thread, daemon=True)
+        download_thread.start()
+
+    def download_and_install_thread(self):
+        try:
+            url = self.latest_version_info['url']
+            file_name = self.latest_version_info['name']
+            temp_dir = tempfile.gettempdir()
+            installer_path = os.path.join(temp_dir, file_name)
+
+            with requests.get(url, stream=True) as r:
+                r.raise_for_status()
+                with open(installer_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+            # After download, run the installer
+            subprocess.Popen([installer_path])
+            self.page.run_threadsafe(self.page.window_close)
+
+        except requests.RequestException as e:
+            print(f"Download failed: {e}")
+            self.page.run_threadsafe(self.show_download_error)
+
+    def show_download_error(self):
+        self.progress_dialog.open = False
+        # You could show another dialog here informing the user of the error
+        self.page.update()
+
+
+# --- Main App --- (Original App Code starts here, slightly adapted)
 from converter import convert_webp_to_gif, convert_gif_to_webp
 
 class AppState:
@@ -13,6 +139,7 @@ def main(page: ft.Page):
     page.title = "Conversor de Mídia Universal"
     page.window_width = 800
     page.window_height = 600
+    # ... (rest of the original main function, unchanged)
     page.window_min_width = 700
     page.window_min_height = 500
     page.vertical_alignment = ft.MainAxisAlignment.START
@@ -50,17 +177,13 @@ def main(page: ft.Page):
         title = "Conversor WebP para GIF" if mode == 'webp_to_gif' else "Conversor GIF para WebP"
         file_extension = "webp" if mode == 'webp_to_gif' else "gif"
 
-        # --- Controls that need to be referenced later ---
         selected_files_text = ft.Text("Nenhum arquivo selecionado")
         output_dir_text = ft.Text("Nenhuma pasta selecionada")
         progress_bar = ft.ProgressBar(width=400, value=0)
         status_label = ft.Text("")
         convert_button = ft.ElevatedButton("Converter", icon=ft.icons.SWAP_HORIZ)
-
-        # --- Settings controls ---
         settings_controls = create_settings_controls(mode, page)
 
-        # --- Event Handlers and Logic ---
         def on_files_selected(e: ft.FilePickerResultEvent):
             if e.files:
                 state.input_paths = [f.path for f in e.files]
@@ -95,29 +218,21 @@ def main(page: ft.Page):
                     lossless = settings_controls['lossless'].value
                     quality = int(settings_controls['quality'].value)
                     success = convert_gif_to_webp(file_path, state.output_dir, lossless=lossless, quality=quality)
-
                 if success:
                     converted_count += 1
-
-                # Update progress in a thread-safe way
                 progress_value = (i + 1) / total_files
                 page.run_threadsafe(update_progress, progress_value)
-
             page.run_threadsafe(finish_conversion, converted_count, total_files)
 
         def start_conversion(e):
             if not state.input_paths or not state.output_dir:
-                # This should be a dialog in a real app
                 status_label.value = "Selecione arquivos e uma pasta de destino."
                 page.update()
                 return
-
             convert_button.disabled = True
             status_label.value = "Convertendo..."
             progress_bar.value = 0
             page.update()
-
-            # Run conversion in a separate thread
             thread = threading.Thread(target=run_conversion_thread, daemon=True)
             thread.start()
 
@@ -140,7 +255,6 @@ def main(page: ft.Page):
                     ft.Text("1. Selecione os Arquivos", weight=ft.FontWeight.BOLD),
                     ft.Row([
                         ft.ElevatedButton("Selecionar Arquivos", icon=ft.icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=[file_extension])),
-                        ft.ElevatedButton("Selecionar Pasta", icon=ft.icons.FOLDER_OPEN, disabled=True),
                     ]),
                     selected_files_text
                 ]),
@@ -164,7 +278,6 @@ def main(page: ft.Page):
                 ft.Column([
                     ft.Text("4. Execute a Conversão", weight=ft.FontWeight.BOLD),
                     ft.Row([
-                        ft.ElevatedButton("Pré-visualizar", icon=ft.icons.VISIBILITY, disabled=True),
                         convert_button,
                     ]),
                     progress_bar,
@@ -223,3 +336,8 @@ def main(page: ft.Page):
     )
 
     show_view("dashboard")
+
+    # --- Start Update Check ---
+    update_manager = UpdateManager(page)
+    update_thread = threading.Thread(target=update_manager.check_for_updates_thread, daemon=True)
+    update_thread.start()

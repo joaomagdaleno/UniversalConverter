@@ -24,3 +24,6 @@ env/
 # Arquivos de sistema operacional
 .DS_Store
 Thumbs.db
+
+# Arquivos de log
+*.log
