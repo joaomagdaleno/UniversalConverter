@@ -1,31 +1,46 @@
-# Como Executar o Projeto no Visual Studio
+# Instruções para Lançamento de Novas Versões (Automatizado)
 
-Este guia descreve os passos necessários para compilar e executar a aplicação `UniversalConverter` em um ambiente de desenvolvimento usando o Visual Studio 2022.
+Com a automação via GitHub Actions, o processo de lançar uma nova versão do seu aplicativo se tornou extremamente simples. Todo o trabalho manual de compilar o `.exe` e fazer upload foi eliminado.
 
-## Pré-requisitos
+### O Processo Automatizado
 
-- **Visual Studio 2022:** Certifique-se de ter o Visual Studio instalado.
-- **Carga de Trabalho de Desenvolvimento para UWP:** Durante a instalação do Visual Studio, é necessário ter selecionado a carga de trabalho "Desenvolvimento para Plataforma Universal do Windows".
-- **SDK do Windows 11:** Instale o SDK do Windows 11 (versão 10.0.22621.0 ou superior).
+O fluxo de trabalho do GitHub Actions (`.github/workflows/release.yml`) está configurado para ser ativado sempre que uma nova **"tag"** de versão (ex: `v1.0.1`) é enviada para o repositório.
 
-## Passos para Executar
+Quando isso acontece, um robô no GitHub irá:
+1.  Criar uma máquina virtual segura com Windows.
+2.  Baixar seu código-fonte.
+3.  Instalar todas as dependências do `requirements.txt`.
+4.  Compilar o `UniversalConverter.exe` usando o PyInstaller.
+5.  Criar um `version.json` específico para o release, já com os links e notas da versão corretos.
+6.  Criar uma nova "Release" na página do seu GitHub.
+7.  Fazer o upload do `.exe` e do `version.json` para essa Release.
 
-1.  **Abrir a Solução:**
-    -   Abra o Visual Studio.
-    -   Vá em `File > Open > Project/Solution` (ou `Arquivo > Abrir > Projeto/Solução`).
-    -   Navegue até a pasta do projeto e selecione o arquivo `UniversalConverter.sln`.
+O seu aplicativo, ao verificar por atualizações, encontrará esses arquivos e se atualizará sozinho.
 
-2.  **Definir o Projeto de Inicialização:**
-    -   A solução contém dois projetos: `UniversalConverter` (o código da aplicação) e `UniversalConverter.Packager` (o projeto de empacotamento).
-    -   Para executar o aplicativo em modo de depuração, o projeto de empacotamento deve ser definido como o projeto de inicialização.
-    -   No **Solution Explorer** (Gerenciador de Soluções), clique com o botão direito do mouse no projeto **`UniversalConverter.Packager`**.
-    -   No menu de contexto, selecione **"Set as Startup Project"** (Definir como Projeto de Inicialização).
+### Como Lançar uma Nova Versão
 
-3.  **Selecionar a Arquitetura Correta:**
-    -   Na barra de ferramentas superior do Visual Studio, certifique-se de que a arquitetura da solução (por exemplo, `x64` ou `x86`) corresponde à do seu sistema. `x64` é a escolha mais comum.
+Seu único trabalho agora é dizer ao Git qual é a nova versão.
 
-4.  **Executar o Projeto:**
-    -   Pressione a tecla **F5** ou clique no botão verde de "Play" com o nome `UniversalConverter.Packager` na barra de ferramentas.
-    -   O Visual Studio irá compilar ambos os projetos, criar um pacote de instalação de teste, assiná-lo com um certificado temporário e instalar/executar o aplicativo no seu computador.
+**Passo 1: Incremente a Versão Local**
 
-Na primeira vez que você executar, o Windows pode solicitar a instalação do certificado de teste. Se isso acontecer, aceite para permitir que o aplicativo seja instalado.
+*   Abra o arquivo `version.json` no seu projeto e aumente o número da versão (ex: de `"1.0.0"` para `"1.0.1"`).
+*   Faça o commit desta pequena alteração:
+    ```bash
+    git add version.json
+    git commit -m "Bump version to 1.0.1"
+    ```
+
+**Passo 2: Crie e Envie a "Tag"**
+
+*   No seu terminal, use o comando `git tag` para criar uma tag com o **mesmo número de versão**, prefixado com `v`.
+    ```bash
+    git tag v1.0.1
+    ```
+
+*   Agora, envie seus commits e a nova tag para o GitHub:
+    ```bash
+    git push
+    git push --tags
+    ```
+
+**E é isso!** Assim que você executar o `git push --tags`, o robô do GitHub Actions começará a trabalhar. Você pode ir para a aba "Actions" no seu repositório para assistir ao progresso. Em alguns minutos, a nova release aparecerá na seção "Releases" do seu GitHub, pronta para ser baixada pelos seus usuários.
