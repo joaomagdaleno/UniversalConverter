@@ -159,17 +159,17 @@ def main(page: ft.Page):
 
     def create_dashboard_view():
         return ft.Column(
-            [
+            controls=[
                 ft.Text("Selecione uma Ferramenta de Conversão", size=20, weight=ft.FontWeight.BOLD),
                 ft.Row(
-                    [
+                    controls=[
                         ft.ElevatedButton(text="WebP para GIF", on_click=lambda _: show_view('webp_to_gif'), height=80, width=200),
                         ft.ElevatedButton(text="GIF para WebP", on_click=lambda _: show_view('gif_to_webp'), height=80, width=200),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER, spacing=20
                 )
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=30
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=30, expand=True, alignment=ft.MainAxisAlignment.CENTER
         )
 
     def create_conversion_view(mode):
