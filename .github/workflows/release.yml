@@ -31,14 +31,14 @@ jobs:
         run: echo "app_version=$(cat VERSION.txt)" >> $env:GITHUB_OUTPUT
 
       - name: Package application
-        run: flet build windows --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output
+        run: flet build windows --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output --module-name main
         env:
           PYTHONUTF8: "1"
 
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
         with:
-          files: build/windows/UniversalConverter.msix
+          files: build/windows/runner/Release/msix/*.msix
           tag_name: ${{ github.ref }}
           name: Release ${{ steps.version.outputs.app_version }}
           body: "New release of Universal Converter."
