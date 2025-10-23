@@ -37,7 +37,7 @@ jobs:
 
       - name: Zip the output
         run: |
-          Compress-Archive -Path dist/UniversalConverter/* -DestinationPath dist/UniversalConverter-v${{ steps.version.outputs.app_version }}.zip
+          Compress-Archive -Path dist/UniversalConverter.exe -DestinationPath dist/UniversalConverter-v${{ steps.version.outputs.app_version }}.zip
 
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
