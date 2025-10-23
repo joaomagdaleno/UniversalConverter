@@ -31,12 +31,12 @@ jobs:
         run: echo "app_version=$(cat VERSION.txt)" >> $env:GITHUB_OUTPUT
 
       - name: Package application
-        run: flet build windows --platform windows --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output --module-name main
+        run: flet build windows --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output --module-name main
         env:
           PYTHONUTF8: "1"
 
-      - name: List build directory
-        run: ls -R build
+      - name: List build output
+        run: ls -R build/windows/runner
 
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
