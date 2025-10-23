@@ -340,13 +340,18 @@ def main(page: ft.Page):
             converted_count = 0
 
             for i, file_path in enumerate(state.input_paths):
-                settings = {}
+                settings = {
+                    'width': settings_controls['width'].value,
+                    'height': settings_controls['height'].value,
+                    'keep_aspect_ratio': settings_controls['keep_aspect_ratio'].value,
+                }
+                if 'quality' in settings_controls:
+                    settings['quality'] = int(settings_controls['quality'].value)
                 if state.conversion_mode == 'WEBP_to_GIF':
                     settings['frame_rate'] = int(settings_controls['fps'].value)
                     settings['loop'] = settings_controls['loop'].value
                 elif state.conversion_mode == 'GIF_to_WEBP':
                     settings['lossless'] = settings_controls['lossless'].value
-                    settings['quality'] = int(settings_controls['quality'].value)
 
                 success = convert_image(file_path, state.output_dir, to_format, settings)
 
@@ -424,28 +429,48 @@ def main(page: ft.Page):
         ], spacing=15)
 
     def create_settings_controls(mode, page_ref):
+        _, to_format = mode.split('_to_')
+
+        # --- Controles de Redimensionamento (Sempre Visíveis) ---
+        width_input = ft.TextField(label="Largura", width=100)
+        height_input = ft.TextField(label="Altura", width=100)
+        keep_aspect_ratio_checkbox = ft.Checkbox(label="Manter Proporção", value=True)
+
+        resize_controls = [
+            ft.Text("Redimensionar (Opcional)", weight=ft.FontWeight.BOLD),
+            ft.Row([width_input, height_input, keep_aspect_ratio_checkbox], spacing=10)
+        ]
+
+        # --- Controles Específicos do Formato ---
+        format_specific_controls = []
+        output_controls = {
+            "width": width_input,
+            "height": height_input,
+            "keep_aspect_ratio": keep_aspect_ratio_checkbox,
+        }
+
+        if to_format in ['JPG', 'WEBP']:
+            quality_slider = ft.Slider(min=1, max=100, divisions=99, value=90, label="Qualidade: {value}")
+            format_specific_controls.extend([ft.Text("Qualidade", weight=ft.FontWeight.BOLD), quality_slider])
+            output_controls["quality"] = quality_slider
+
         if mode == 'WEBP_to_GIF':
             fps_input = ft.TextField(label="Taxa de Quadros (FPS)", value="10", width=150)
-            loop_checkbox = ft.Checkbox(label="GIF em Loop (Repetir Infinitamente)", value=True)
-            return {
-                "controls": [ft.Text("3. Ajuste as Configurações", weight=ft.FontWeight.BOLD), fps_input, loop_checkbox],
-                "fps": fps_input,
-                "loop": loop_checkbox
-            }
-        elif mode == 'GIF_to_WEBP':
-            quality_slider = ft.Slider(min=1, max=100, divisions=99, value=80, label="Qualidade: {value}")
+            loop_checkbox = ft.Checkbox(label="GIF em Loop", value=True)
+            format_specific_controls.extend([ft.Text("Animação", weight=ft.FontWeight.BOLD), fps_input, loop_checkbox])
+            output_controls.update({"fps": fps_input, "loop": loop_checkbox})
 
-            def toggle_quality(e):
-                quality_slider.disabled = e.control.value
-                page_ref.update()
-            lossless_checkbox = ft.Checkbox(label="Compressão sem Perdas (Qualidade Máxima)", value=False, on_change=toggle_quality)
-            return {
-                "controls": [ft.Text("3. Ajuste as Configurações", weight=ft.FontWeight.BOLD), lossless_checkbox, quality_slider],
-                "lossless": lossless_checkbox,
-                "quality": quality_slider
-            }
-        else:
-            return {}
+        elif mode == 'GIF_to_WEBP':
+            lossless_checkbox = ft.Checkbox(label="Compressão sem Perdas", value=False, on_change=lambda e: setattr(output_controls.get('quality'), 'disabled', e.control.value) or page_ref.update())
+            format_specific_controls.append(lossless_checkbox)
+            output_controls["lossless"] = lossless_checkbox
+
+        all_controls = resize_controls + format_specific_controls
+        if all_controls:
+            all_controls.insert(0, ft.Text("3. Ajuste as Configurações", weight=ft.FontWeight.BOLD))
+
+        output_controls["controls"] = all_controls if all_controls else []
+        return output_controls
 
     navigation_rail = ft.NavigationRail(
         selected_index=0,

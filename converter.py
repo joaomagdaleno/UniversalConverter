@@ -19,6 +19,16 @@ def convert_image(input_path, output_dir, to_format, settings=None):
             i += 1
 
         with Image.open(input_path) as img:
+            # --- Resize Logic ---
+            width = settings.get('width')
+            height = settings.get('height')
+            if width and height:
+                w, h = int(width), int(height)
+                if settings.get('keep_aspect_ratio', True):
+                    img.thumbnail((w, h))
+                else:
+                    img = img.resize((w, h))
+
             save_params = {}
 
             # Handle animated formats
@@ -43,7 +53,7 @@ def convert_image(input_path, output_dir, to_format, settings=None):
             elif to_format_lower == 'webp' and is_animated:
                 save_params.update({
                     'lossless': settings.get('lossless', False),
-                    'quality': settings.get('quality', 80),
+                    'quality': int(settings.get('quality', 80)),
                     'method': 6,
                     'duration': img.info.get('duration', 100),
                     'loop': img.info.get('loop', 0),
@@ -54,8 +64,8 @@ def convert_image(input_path, output_dir, to_format, settings=None):
             if to_format_lower in ['jpeg', 'jpg', 'bmp'] and img.mode == 'RGBA':
                 img = img.convert('RGB')
 
-            if to_format_lower in ['jpeg', 'jpg']:
-                save_params['quality'] = settings.get('quality', 95)
+            if to_format_lower in ['jpeg', 'jpg', 'webp']:
+                save_params['quality'] = int(settings.get('quality', 95))
 
             img.save(output_path, format=to_format, **save_params)
 
