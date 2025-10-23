@@ -163,7 +163,7 @@ class UpdateManager:
 
 
 # --- Main App ---
-from converter import convert_webp_to_gif, convert_gif_to_webp
+from converter import convert_image
 
 class AppState:
     def __init__(self):
@@ -182,35 +182,72 @@ def main(page: ft.Page):
     state = AppState()
     main_content_area = ft.Column(expand=True, spacing=20)
 
-    def show_view(view_name):
+    def show_view(mode):
         main_content_area.controls.clear()
-        if view_name == "dashboard":
+        if mode == "dashboard":
             main_content_area.controls.append(create_dashboard_view())
-        elif view_name == "webp_to_gif":
-            main_content_area.controls.append(create_conversion_view('webp_to_gif'))
-        elif view_name == "gif_to_webp":
-            main_content_area.controls.append(create_conversion_view('gif_to_webp'))
+        else:
+            main_content_area.controls.append(create_conversion_view(mode))
         page.update()
 
     def create_dashboard_view():
+        from_format = ft.Dropdown(
+            label="Converter de",
+            options=[
+                ft.dropdown.Option("WEBP"),
+                ft.dropdown.Option("GIF"),
+                ft.dropdown.Option("PNG"),
+                ft.dropdown.Option("JPG"),
+                ft.dropdown.Option("BMP"),
+            ],
+            width=200,
+        )
+        to_format = ft.Dropdown(
+            label="Para",
+            options=[
+                ft.dropdown.Option("WEBP"),
+                ft.dropdown.Option("GIF"),
+                ft.dropdown.Option("PNG"),
+                ft.dropdown.Option("JPG"),
+                ft.dropdown.Option("BMP"),
+            ],
+            width=200,
+        )
+
+        def start_conversion_setup(e):
+            if from_format.value and to_format.value:
+                mode = f"{from_format.value}_to_{to_format.value}"
+                show_view(mode)
+
         return ft.Column(
             controls=[
-                ft.Text("Selecione uma Ferramenta de Conversão", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text("Selecione o Formato da Conversão", size=20, weight=ft.FontWeight.BOLD),
                 ft.Row(
                     controls=[
-                        ft.ElevatedButton(text="WebP para GIF", on_click=lambda _: show_view('webp_to_gif'), height=80, width=200),
-                        ft.ElevatedButton(text="GIF para WebP", on_click=lambda _: show_view('gif_to_webp'), height=80, width=200),
+                        from_format,
+                        ft.Icon(ft.icons.SWAP_HORIZ),
+                        to_format,
                     ],
-                    alignment=ft.MainAxisAlignment.CENTER, spacing=20
-                )
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    spacing=20,
+                ),
+                ft.ElevatedButton("Iniciar", on_click=start_conversion_setup, height=50, width=200),
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=30, expand=True, alignment=ft.MainAxisAlignment.CENTER
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=30,
+            expand=True,
+            alignment=ft.MainAxisAlignment.CENTER,
         )
 
     def create_conversion_view(mode):
         state.conversion_mode = mode
-        title = "Conversor WebP para GIF" if mode == 'webp_to_gif' else "Conversor GIF para WebP"
-        file_extension = "webp" if mode == 'webp_to_gif' else "gif"
+        from_format, to_format = mode.split('_to_')
+        title = f"Conversor {from_format} para {to_format}"
+
+        # Define allowed extensions, treating JPG and JPEG as the same
+        allowed_extensions = [from_format.lower()]
+        if from_format == "JPG":
+            allowed_extensions.append("jpeg")
 
         selected_files_text = ft.Text("Nenhum arquivo selecionado")
         output_dir_text = ft.Text("Nenhuma pasta selecionada")
@@ -242,21 +279,27 @@ def main(page: ft.Page):
         page.overlay.extend([file_picker, output_dir_picker])
 
         def run_conversion_thread():
+            from_format, to_format = state.conversion_mode.split('_to_')
             total_files = len(state.input_paths)
             converted_count = 0
+
             for i, file_path in enumerate(state.input_paths):
-                if state.conversion_mode == 'webp_to_gif':
-                    fps = int(settings_controls['fps'].value)
-                    loop = settings_controls['loop'].value
-                    success = convert_webp_to_gif(file_path, state.output_dir, frame_rate=fps, loop=0 if loop else 1)
-                else: # gif_to_webp
-                    lossless = settings_controls['lossless'].value
-                    quality = int(settings_controls['quality'].value)
-                    success = convert_gif_to_webp(file_path, state.output_dir, lossless=lossless, quality=quality)
+                settings = {}
+                if state.conversion_mode == 'WEBP_to_GIF':
+                    settings['frame_rate'] = int(settings_controls.get('fps', ft.TextField(value='10')).value)
+                    settings['loop'] = settings_controls.get('loop', ft.Checkbox(value=True)).value
+                elif state.conversion_mode == 'GIF_to_WEBP':
+                    settings['lossless'] = settings_controls.get('lossless', ft.Checkbox(value=False)).value
+                    settings['quality'] = int(settings_controls.get('quality', ft.Slider(value=80)).value)
+
+                success = convert_image(file_path, state.output_dir, to_format, settings)
+
                 if success:
                     converted_count += 1
+
                 progress_value = (i + 1) / total_files
                 page.run_threadsafe(update_progress, progress_value)
+
             page.run_threadsafe(finish_conversion, converted_count, total_files)
 
         def start_conversion(e):
@@ -289,7 +332,7 @@ def main(page: ft.Page):
                 ft.Column([
                     ft.Text("1. Selecione os Arquivos", weight=ft.FontWeight.BOLD),
                     ft.Row([
-                        ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=[file_extension])),
+                        ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=allowed_extensions)),
                     ]),
                     selected_files_text
                 ]),
@@ -324,7 +367,7 @@ def main(page: ft.Page):
         ], spacing=15)
 
     def create_settings_controls(mode, page_ref):
-        if mode == 'webp_to_gif':
+        if mode == 'WEBP_to_GIF':
             fps_input = ft.TextField(label="Taxa de Quadros (FPS)", value="10", width=150)
             loop_checkbox = ft.Checkbox(label="GIF em Loop (Repetir Infinitamente)", value=True)
             return {
@@ -332,8 +375,9 @@ def main(page: ft.Page):
                 "fps": fps_input,
                 "loop": loop_checkbox
             }
-        else: # gif_to_webp
+        elif mode == 'GIF_to_WEBP':
             quality_slider = ft.Slider(min=1, max=100, divisions=99, value=80, label="Qualidade: {value}")
+
             def toggle_quality(e):
                 quality_slider.disabled = e.control.value
                 page_ref.update()
@@ -343,6 +387,8 @@ def main(page: ft.Page):
                 "lossless": lossless_checkbox,
                 "quality": quality_slider
             }
+        else:
+            return {"controls": []}
 
     navigation_rail = ft.NavigationRail(
         selected_index=0,
