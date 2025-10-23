@@ -35,6 +35,9 @@ jobs:
         env:
           PYTHONUTF8: "1"
 
+      - name: List build directory
+        run: ls -R build
+
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
         with:
