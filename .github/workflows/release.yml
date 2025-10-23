@@ -31,7 +31,7 @@ jobs:
         run: echo "app_version=$(cat VERSION.txt)" >> $env:GITHUB_OUTPUT
 
       - name: Package application
-        run: flet pack --name UniversalConverter --product "Universal Converter" --product-version ${{ steps.version.outputs.app_version }} --msi main.py
+        run: flet pack --name UniversalConverter --product_name "Universal Converter" --product_version ${{ steps.version.outputs.app_version }} --msi main.py
         env:
           PYTHONUTF8: "1"
 
