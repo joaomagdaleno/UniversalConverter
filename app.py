@@ -179,6 +179,47 @@ def main(page: ft.Page):
     page.window_min_height = 500
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.START
+
+    def on_file_drop(e: ft.FileDropEvent):
+        if state.conversion_mode is None or state.conversion_mode == "dashboard":
+            return # Do nothing if not in a conversion view
+
+        from_format, _ = state.conversion_mode.split('_to_')
+        allowed_extensions = [from_format.lower()]
+        if from_format == "JPG":
+            allowed_extensions.append("jpeg")
+
+        dropped_paths = [f.path for f in e.files]
+        found_files = []
+
+        for path in dropped_paths:
+            if os.path.isdir(path):
+                # If it's a directory, scan it for compatible files
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        if any(file.lower().endswith(ext) for ext in allowed_extensions):
+                            found_files.append(os.path.join(root, file))
+            else:
+                # If it's a file, check if it's compatible
+                if any(path.lower().endswith(ext) for ext in allowed_extensions):
+                    found_files.append(path)
+
+        if found_files:
+            state.input_paths.extend(found_files) # Append to existing list
+            # Now, we need to find the specific instance of the text control.
+            # Since we can't easily pass it directly, we'll assume the active conversion view's text control is the one to update.
+            # A more robust solution might involve a more complex state management, but this will work for now.
+            if len(main_content_area.controls) > 0 and isinstance(main_content_area.controls[0], ft.Column):
+                conversion_view_controls = main_content_area.controls[0].controls
+                for ctrl in conversion_view_controls:
+                    if isinstance(ctrl, ft.Container) and ctrl.content and isinstance(ctrl.content, ft.Column):
+                         for sub_ctrl in ctrl.content.controls:
+                            if isinstance(sub_ctrl, ft.Text) and "arquivo" in sub_ctrl.value:
+                                sub_ctrl.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
+                                page.update()
+                                return
+
+    page.on_file_drop = on_file_drop
     state = AppState()
     main_content_area = ft.Column(expand=True, spacing=20)
 
@@ -249,7 +290,7 @@ def main(page: ft.Page):
         if from_format == "JPG":
             allowed_extensions.append("jpeg")
 
-        selected_files_text = ft.Text("Nenhum arquivo selecionado")
+        selected_files_text = ft.Text("Nenhum arquivo selecionado", ref=ft.Ref[ft.Text]())
         output_dir_text = ft.Text("Nenhuma pasta selecionada")
         progress_bar = ft.ProgressBar(width=400, value=0)
         status_label = ft.Text("")
