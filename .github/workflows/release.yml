@@ -28,7 +28,7 @@ jobs:
         run: echo "app_version=$(cat VERSION.txt)" >> $env:GITHUB_OUTPUT
 
       - name: Package application
-        run: flet build windows --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output main.py
+        run: flet build windows --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output
         env:
           PYTHONUTF8: "1"
 
