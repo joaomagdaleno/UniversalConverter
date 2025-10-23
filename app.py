@@ -181,6 +181,7 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.START
 
     selected_files_ref = ft.Ref[ft.Text]()
+    image_preview_ref = ft.Ref[ft.Image]()
 
     def on_file_drop(e: ft.FileDropEvent):
         if state.conversion_mode is None or state.conversion_mode == "dashboard":
@@ -208,7 +209,13 @@ def main(page: ft.Page):
             state.input_paths.extend(found_files)
             if selected_files_ref.current:
                 selected_files_ref.current.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
-                page.update()
+            if image_preview_ref.current:
+                if len(state.input_paths) == 1:
+                    image_preview_ref.current.src = state.input_paths[0]
+                    image_preview_ref.current.visible = True
+                else:
+                    image_preview_ref.current.visible = False
+            page.update()
 
     page.on_file_drop = on_file_drop
     state = AppState()
@@ -281,6 +288,7 @@ def main(page: ft.Page):
         if from_format == "JPG":
             allowed_extensions.append("jpeg")
 
+        image_preview = ft.Image(ref=image_preview_ref, visible=False, height=150, fit=ft.ImageFit.CONTAIN)
         selected_files_text = ft.Text("Nenhum arquivo selecionado", ref=selected_files_ref)
         output_dir_text = ft.Text("Nenhuma pasta selecionada")
         progress_bar = ft.ProgressBar(width=400, value=0)
@@ -292,9 +300,15 @@ def main(page: ft.Page):
             if e.files:
                 state.input_paths = [f.path for f in e.files]
                 selected_files_text.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)"
+                if len(state.input_paths) == 1:
+                    image_preview_ref.current.src = state.input_paths[0]
+                    image_preview_ref.current.visible = True
+                else:
+                    image_preview_ref.current.visible = False
             else:
                 state.input_paths = []
                 selected_files_text.value = "Nenhum arquivo selecionado"
+                image_preview_ref.current.visible = False
             page.update()
 
         def on_folder_selected(e: ft.FilePickerResultEvent):
@@ -314,10 +328,12 @@ def main(page: ft.Page):
                 else:
                     state.input_paths = []
                     selected_files_text.value = f"Nenhum arquivo compatível encontrado na pasta selecionada."
+                image_preview_ref.current.visible = False
             else:
                 # If no folder is selected, do nothing or clear previous selection
                 state.input_paths = []
                 selected_files_text.value = "Nenhum arquivo selecionado."
+                image_preview_ref.current.visible = False
             page.update()
 
         def on_output_dir_selected(e: ft.FilePickerResultEvent):
@@ -396,7 +412,8 @@ def main(page: ft.Page):
                         ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=allowed_extensions)),
                         ft.ElevatedButton("Selecionar Pasta", icon=ft.Icons.FOLDER_OPEN, on_click=lambda _: folder_picker.get_directory_path()),
                     ]),
-                    selected_files_text
+                    selected_files_text,
+                    image_preview,
                 ]),
                 padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
