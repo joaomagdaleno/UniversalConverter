@@ -258,7 +258,7 @@ def main(page: ft.Page):
                     ]),
                     selected_files_text
                 ]),
-                padding=10, border=ft.border.all(1, ft.colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
             ft.Container(
                 ft.Column([
@@ -268,11 +268,11 @@ def main(page: ft.Page):
                     ]),
                     output_dir_text
                 ]),
-                padding=10, border=ft.border.all(1, ft.colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
             ft.Container(
                 ft.Column(settings_controls["controls"]),
-                padding=10, border=ft.border.all(1, ft.colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
             ft.Container(
                 ft.Column([
@@ -283,7 +283,7 @@ def main(page: ft.Page):
                     progress_bar,
                     status_label
                 ]),
-                padding=10, border=ft.border.all(1, ft.colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
             ft.ElevatedButton("Voltar para o Dashboard", on_click=lambda _: show_view("dashboard"))
         ], spacing=15)
