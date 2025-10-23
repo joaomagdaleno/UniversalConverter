@@ -265,6 +265,29 @@ def main(page: ft.Page):
                 selected_files_text.value = "Nenhum arquivo selecionado"
             page.update()
 
+        def on_folder_selected(e: ft.FilePickerResultEvent):
+            if e.path:
+                folder_path = e.path
+                found_files = []
+                # Use allowed_extensions which is already defined in the view
+                for root, _, files in os.walk(folder_path):
+                    for file in files:
+                        # Check if the file ends with any of the allowed extensions
+                        if any(file.lower().endswith(ext) for ext in allowed_extensions):
+                            found_files.append(os.path.join(root, file))
+
+                if found_files:
+                    state.input_paths = found_files
+                    selected_files_text.value = f"{len(found_files)} arquivo(s) encontrado(s) na pasta."
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = f"Nenhum arquivo compatível encontrado na pasta selecionada."
+            else:
+                # If no folder is selected, do nothing or clear previous selection
+                state.input_paths = []
+                selected_files_text.value = "Nenhum arquivo selecionado."
+            page.update()
+
         def on_output_dir_selected(e: ft.FilePickerResultEvent):
             if e.path:
                 state.output_dir = e.path
@@ -275,8 +298,9 @@ def main(page: ft.Page):
             page.update()
 
         file_picker = ft.FilePicker(on_result=on_files_selected)
+        folder_picker = ft.FilePicker(on_result=on_folder_selected)
         output_dir_picker = ft.FilePicker(on_result=on_output_dir_selected)
-        page.overlay.extend([file_picker, output_dir_picker])
+        page.overlay.extend([file_picker, folder_picker, output_dir_picker])
 
         def run_conversion_thread():
             from_format, to_format = state.conversion_mode.split('_to_')
@@ -333,6 +357,7 @@ def main(page: ft.Page):
                     ft.Text("1. Selecione os Arquivos", weight=ft.FontWeight.BOLD),
                     ft.Row([
                         ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=allowed_extensions)),
+                        ft.ElevatedButton("Selecionar Pasta", icon=ft.Icons.FOLDER_OPEN, on_click=lambda _: folder_picker.get_directory_path()),
                     ]),
                     selected_files_text
                 ]),
