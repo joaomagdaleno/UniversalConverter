@@ -29,6 +29,8 @@ jobs:
 
       - name: Package application
         run: flet build windows main.py --project UniversalConverter --product "Universal Converter" --build-version ${{ steps.version.outputs.app_version }} --no-rich-output
+        env:
+          PYTHONUTF8: "1"
 
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
