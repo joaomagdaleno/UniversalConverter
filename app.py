@@ -5,6 +5,7 @@ import requests
 import subprocess
 import sys
 import tempfile
+import zipfile
 from packaging.version import parse as parse_version
 
 # --- Constants ---
@@ -37,21 +38,27 @@ class UpdateManager:
                 ft.ProgressBar(width=400, value=None) # Indeterminate progress
             ], tight=True, spacing=10),
         )
+        self.restart_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Atualização Pronta"),
+            content=ft.Text("A nova versão está pronta. O aplicativo será fechado para iniciar o instalador."),
+            actions=[
+                ft.FilledButton("OK", on_click=self.close_and_launch_updater),
+            ],
+        )
 
     def get_current_version(self):
         try:
-            # When running as a script, the path is correct.
-            # When packaged with PyInstaller, the file is in sys._MEIPASS.
             base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
             version_path = os.path.join(base_path, VERSION_FILE)
             with open(version_path, 'r') as f:
                 return f.read().strip()
         except FileNotFoundError:
-            return "0.0.0" # Fallback version
+            return "0.0.0"
 
     def check_for_updates_thread(self):
         if not self.current_version or self.current_version == "0.0.0":
-            return # Don't check if we don't know the current version
+            return
 
         try:
             response = requests.get(self.repo_url, timeout=10)
@@ -67,17 +74,17 @@ class UpdateManager:
 
             if latest_v > current_v:
                 assets = latest_release.get("assets", [])
-                msi_asset = next((asset for asset in assets if asset['name'].endswith('.msi')), None)
-                if msi_asset:
+                zip_asset = next((asset for asset in assets if asset['name'].endswith('.zip')), None)
+                if zip_asset:
                     self.latest_version_info = {
                         "version": latest_version_str,
-                        "url": msi_asset['browser_download_url'],
-                        "name": msi_asset['name']
+                        "url": zip_asset['browser_download_url'],
+                        "name": zip_asset['name']
                     }
                     self.page.run_threadsafe(self.show_update_dialog)
 
         except (requests.RequestException, ValueError) as e:
-            print(f"Update check failed: {e}") # Log error for debugging
+            print(f"Update check failed: {e}")
 
     def show_update_dialog(self):
         self.update_dialog.content.value = f"Uma nova versão ({self.latest_version_info['version']}) está disponível. Deseja baixar e instalar?"
@@ -90,12 +97,11 @@ class UpdateManager:
         self.page.update()
 
     def start_download(self, e):
-        self.close_dialog(e) # Close the confirmation dialog
+        self.close_dialog(e)
         self.page.dialog = self.progress_dialog
         self.progress_dialog.open = True
         self.page.update()
 
-        # Start download in a new thread
         download_thread = threading.Thread(target=self.download_and_install_thread, daemon=True)
         download_thread.start()
 
@@ -104,29 +110,59 @@ class UpdateManager:
             url = self.latest_version_info['url']
             file_name = self.latest_version_info['name']
             temp_dir = tempfile.gettempdir()
-            installer_path = os.path.join(temp_dir, file_name)
+            zip_path = os.path.join(temp_dir, file_name)
+            extract_path = os.path.join(temp_dir, "UniversalConverterUpdate")
 
+            # Download the zip file
             with requests.get(url, stream=True) as r:
                 r.raise_for_status()
-                with open(installer_path, 'wb') as f:
+                with open(zip_path, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
 
-            # After download, run the installer
-            subprocess.Popen([installer_path])
-            self.page.run_threadsafe(self.page.window_close)
+            # Extract the zip file
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(extract_path)
 
-        except requests.RequestException as e:
-            print(f"Download failed: {e}")
+            # Find the executable
+            executable_path = None
+            for root, _, files in os.walk(extract_path):
+                for file in files:
+                    if file.lower() == "universalconverter.exe":
+                        executable_path = os.path.join(root, file)
+                        break
+                if executable_path:
+                    break
+
+            if executable_path:
+                self.updater_exe_path = executable_path
+                self.page.run_threadsafe(self.show_restart_dialog)
+            else:
+                 self.page.run_threadsafe(self.show_download_error)
+
+        except (requests.RequestException, zipfile.BadZipFile) as e:
+            print(f"Download/Extraction failed: {e}")
             self.page.run_threadsafe(self.show_download_error)
 
-    def show_download_error(self):
+    def show_restart_dialog(self):
         self.progress_dialog.open = False
-        # You could show another dialog here informing the user of the error
+        self.page.dialog = self.restart_dialog
+        self.restart_dialog.open = True
+        self.page.update()
+
+    def close_and_launch_updater(self, e):
+        # This will run the new executable and close the current one
+        subprocess.Popen([self.updater_exe_path])
+        self.page.window_close()
+
+    def show_download_error(self):
+        self.progress_dialog.title = ft.Text("Erro na Atualização")
+        self.progress_dialog.content = ft.Text("Não foi possível baixar ou extrair a nova versão.")
+        # No actions, user must close the dialog manually or you can add a button
         self.page.update()
 
 
-# --- Main App --- (Original App Code starts here, slightly adapted)
+# --- Main App ---
 from converter import convert_webp_to_gif, convert_gif_to_webp
 
 class AppState:
@@ -139,7 +175,6 @@ def main(page: ft.Page):
     page.title = "Conversor de Mídia Universal"
     page.window_width = 800
     page.window_height = 600
-    # ... (rest of the original main function, unchanged)
     page.window_min_width = 700
     page.window_min_height = 500
     page.vertical_alignment = ft.MainAxisAlignment.START
