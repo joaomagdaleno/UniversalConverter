@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -35,7 +38,7 @@ jobs:
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
         with:
-          files: build/windows/dist/UniversalConverter.msix
+          files: build/windows/UniversalConverter.msix
           tag_name: ${{ github.ref }}
           name: Release ${{ steps.version.outputs.app_version }}
           body: "New release of Universal Converter."
