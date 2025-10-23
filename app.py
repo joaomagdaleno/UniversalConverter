@@ -225,7 +225,7 @@ def main(page: ft.Page):
                 ft.Row(
                     controls=[
                         from_format,
-                        ft.Icon(ft.icons.SWAP_HORIZ),
+                        ft.Icon(ft.Icons.SWAP_HORIZ),
                         to_format,
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -286,11 +286,11 @@ def main(page: ft.Page):
             for i, file_path in enumerate(state.input_paths):
                 settings = {}
                 if state.conversion_mode == 'WEBP_to_GIF':
-                    settings['frame_rate'] = int(settings_controls.get('fps', ft.TextField(value='10')).value)
-                    settings['loop'] = settings_controls.get('loop', ft.Checkbox(value=True)).value
+                    settings['frame_rate'] = int(settings_controls['fps'].value)
+                    settings['loop'] = settings_controls['loop'].value
                 elif state.conversion_mode == 'GIF_to_WEBP':
-                    settings['lossless'] = settings_controls.get('lossless', ft.Checkbox(value=False)).value
-                    settings['quality'] = int(settings_controls.get('quality', ft.Slider(value=80)).value)
+                    settings['lossless'] = settings_controls['lossless'].value
+                    settings['quality'] = int(settings_controls['quality'].value)
 
                 success = convert_image(file_path, state.output_dir, to_format, settings)
 
@@ -388,7 +388,7 @@ def main(page: ft.Page):
                 "quality": quality_slider
             }
         else:
-            return {"controls": []}
+            return {}
 
     navigation_rail = ft.NavigationRail(
         selected_index=0,
