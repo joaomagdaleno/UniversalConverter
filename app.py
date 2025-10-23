@@ -349,7 +349,7 @@ def main(page: ft.Page):
                 padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
             ft.Container(
-                ft.Column(settings_controls["controls"]),
+                ft.Column(settings_controls.get("controls", [])),
                 padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
             ),
             ft.Container(
