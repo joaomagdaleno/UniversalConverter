@@ -31,13 +31,13 @@ jobs:
         run: echo "app_version=$(cat VERSION.txt)" >> $env:GITHUB_OUTPUT
 
       - name: Package application
-        run: flet pack main.py --name UniversalConverter --product-name "Universal Converter" --product-version ${{ steps.version.outputs.app_version }}
+        run: flet pack main.py --name UniversalConverter --product-name "Universal Converter" --product-version ${{ steps.version.outputs.app_version }} --onedir
         env:
           PYTHONUTF8: "1"
 
       - name: Zip the output
         run: |
-          Compress-Archive -Path dist/UniversalConverter.exe -DestinationPath dist/UniversalConverter-v${{ steps.version.outputs.app_version }}.zip
+          Compress-Archive -Path dist/UniversalConverter -DestinationPath dist/UniversalConverter-v${{ steps.version.outputs.app_version }}.zip
 
       - name: Create Release and Upload Artifact
         uses: softprops/action-gh-release@v1
