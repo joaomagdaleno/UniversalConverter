@@ -67,12 +67,12 @@ class UpdateManager:
 
             if latest_v > current_v:
                 assets = latest_release.get("assets", [])
-                msi_asset = next((asset for asset in assets if asset['name'].endswith('.msi')), None)
-                if msi_asset:
+                msix_asset = next((asset for asset in assets if asset['name'].endswith('.msix')), None)
+                if msix_asset:
                     self.latest_version_info = {
                         "version": latest_version_str,
-                        "url": msi_asset['browser_download_url'],
-                        "name": msi_asset['name']
+                        "url": msix_asset['browser_download_url'],
+                        "name": msix_asset['name']
                     }
                     self.page.run_threadsafe(self.show_update_dialog)
 
