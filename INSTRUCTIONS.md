@@ -80,9 +80,9 @@ O workflow de release é acionado pela criação de uma **tag** que começa com 
 
 Após enviar a tag, a GitHub Action será iniciada automaticamente. Você pode acompanhar o progresso na aba "Actions" do seu repositório.
 
-Quando o processo terminar (geralmente em alguns minutos), uma nova "Release" será criada na página do seu repositório. Esta release conterá o instalador `UniversalConverter.msix`, pronto para ser distribuído aos usuários.
+Quando o processo terminar (geralmente em alguns minutos), uma nova "Release" será criada na página do seu repositório. Esta release conterá um arquivo `.zip` com o programa.
 
 ## 👨‍💻 Para Usuários Finais
 
--   **Instalação:** O instalador da versão mais recente (`UniversalConverter.msix`) pode ser encontrado na seção de [Releases](https://github.com/joaomagdaleno/UniversalConverter/releases) do repositório no GitHub.
--   **Atualizações:** A aplicação verifica automaticamente se há novas versões ao ser iniciada. Se uma atualização for encontrada, ela será baixada em segundo plano, e uma notificação aparecerá perguntando se você deseja reiniciar e instalar a nova versão.
+-   **Instalação:** O arquivo `.zip` da versão mais recente pode ser encontrado na seção de [Releases](https://github.com/joaomagdaleno/UniversalConverter/releases) do repositório no GitHub. Baixe e descompacte o arquivo, e execute `UniversalConverter.exe` para iniciar o programa.
+-   **Atualizações:** A aplicação verifica automaticamente se há novas versões ao ser iniciada. Se uma atualização for encontrada, ela será baixada e extraída em segundo plano. Uma notificação aparecerá perguntando se você deseja fechar o aplicativo atual e iniciar a nova versão.
