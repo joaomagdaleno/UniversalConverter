@@ -1,6 +1,5 @@
 Pillow
 packaging
 pyinstaller
-pydub
 flet
 requests

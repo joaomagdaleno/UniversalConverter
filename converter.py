@@ -19,36 +19,30 @@ def convert_image(input_path, output_dir, to_format, settings=None):
             i += 1
 
         with Image.open(input_path) as img:
-            # --- Resize Logic ---
             width = settings.get('width')
             height = settings.get('height')
             if width and height:
-                w, h = int(width), int(height)
-                if settings.get('keep_aspect_ratio', True):
-                    img.thumbnail((w, h))
-                else:
-                    img = img.resize((w, h))
+                try:
+                    w, h = int(width), int(height)
+                    if settings.get('keep_aspect_ratio', True):
+                        img.thumbnail((w, h))
+                    else:
+                        img = img.resize((w, h))
+                except (ValueError, TypeError):
+                    pass
 
             save_params = {}
-
-            # Handle animated formats
             is_animated = hasattr(img, 'n_frames') and img.n_frames > 1
 
             if to_format_lower == 'gif' and is_animated:
-                frames = []
-                for i in range(img.n_frames):
-                    img.seek(i)
-                    quantized_frame = img.convert("RGBA").quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG)
-                    frames.append(quantized_frame)
-
+                frames = [frame.copy().convert("RGBA").quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG) for frame in Image.ImageSequence.Iterator(img)]
                 if frames:
                     frames[0].save(
                         output_path, 'gif', save_all=True, append_images=frames[1:],
-                        duration=int(1000 / settings.get('frame_rate', 10)),
-                        loop=0 if settings.get('loop', True) else 1,
-                        disposal=2, transparency=img.info.get('transparency')
+                        duration=img.info.get('duration', 100), loop=img.info.get('loop', 0),
+                        disposal=2, transparency=img.info.get('transparency', -1)
                     )
-                return output_path
+                return True
 
             elif to_format_lower == 'webp' and is_animated:
                 save_params.update({
@@ -57,10 +51,10 @@ def convert_image(input_path, output_dir, to_format, settings=None):
                     'method': 6,
                     'duration': img.info.get('duration', 100),
                     'loop': img.info.get('loop', 0),
-                    'save_all': True,
                 })
+                img.save(output_path, 'webp', save_all=True, **save_params)
+                return True
 
-            # Handle static images and single-frame conversions
             if to_format_lower in ['jpeg', 'jpg', 'bmp'] and img.mode == 'RGBA':
                 img = img.convert('RGB')
 
@@ -69,7 +63,7 @@ def convert_image(input_path, output_dir, to_format, settings=None):
 
             img.save(output_path, format=to_format, **save_params)
 
-        return output_path
+        return True
     except Exception as e:
-        print(f"Erro ao converter {input_path} para {to_format}: {e}")
-        return None
+        print(f"Error converting {input_path} to {to_format}: {e}")
+        return False

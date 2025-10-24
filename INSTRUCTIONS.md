@@ -82,36 +82,6 @@ Após enviar a tag, a GitHub Action será iniciada automaticamente. Você pode a
 
 Quando o processo terminar (geralmente em alguns minutos), uma nova "Release" será criada na página do seu repositório. Esta release conterá um arquivo `.zip` com o programa.
 
-### Comandos Git Úteis para Gerenciar o Repositório e as Tags
-
-Para garantir que seu repositório local esteja sempre atualizado e para gerenciar tags de versão, utilize os seguintes comandos:
-
--   **Atualizar o Repositório Local:**
-    Antes de criar uma nova versão, é uma boa prática sincronizar seu repositório local com o remoto.
-    ```bash
-    git pull
-    ```
-
--   **Listar Tags Existentes:**
-    Para ver todas as tags que já foram criadas.
-    ```bash
-    git tag
-    ```
-
--   **Deletar uma Tag Local:**
-    Se você criou uma tag com o nome errado, pode deletá-la localmente.
-    ```bash
-    # Exemplo para deletar a tag v1.0.1
-    git tag -d v1.0.1
-    ```
-
--   **Deletar uma Tag Remota:**
-    Se você já enviou a tag para o GitHub, precisará também removê-la de lá.
-    ```bash
-    # Exemplo para deletar a tag v1.0.1 no repositório remoto
-    git push origin --delete v1.0.1
-    ```
-
 ## 👨‍💻 Para Usuários Finais
 
 -   **Instalação:** O arquivo `.zip` da versão mais recente pode ser encontrado na seção de [Releases](https://github.com/joaomagdaleno/UniversalConverter/releases) do repositório no GitHub. Baixe e descompacte o arquivo, e execute `UniversalConverter.exe` para iniciar o programa.
