@@ -164,6 +164,7 @@ class UpdateManager:
 
 # --- Main App ---
 from converter import convert_image
+from audio_converter import convert_audio
 
 class AppState:
     def __init__(self):
@@ -180,21 +181,25 @@ def main(page: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.START
 
-    selected_files_ref = ft.Ref[ft.Text]()
+    # Refs for UI controls that need to be updated programmatically
+    selected_files_ref_img = ft.Ref[ft.Text]()
+    selected_files_ref_audio = ft.Ref[ft.Text]()
     image_preview_ref = ft.Ref[ft.Image]()
 
     def on_file_drop(e: ft.FileDropEvent):
-        if state.conversion_mode is None or state.conversion_mode == "dashboard":
+        if state.conversion_mode is None or "dashboard" in state.conversion_mode:
             return
 
-        from_format, _ = state.conversion_mode.split('_to_')
+        mode_parts = state.conversion_mode.split('_')
+        converter_type = mode_parts[0] # 'audio' or 'image'
+        from_format = mode_parts[1]
+
         allowed_extensions = [from_format.lower()]
         if from_format == "JPG":
             allowed_extensions.append("jpeg")
 
         dropped_paths = [f.path for f in e.files]
         found_files = []
-
         for path in dropped_paths:
             if os.path.isdir(path):
                 for root, _, files in os.walk(path):
@@ -207,14 +212,21 @@ def main(page: ft.Page):
 
         if found_files:
             state.input_paths.extend(found_files)
-            if selected_files_ref.current:
-                selected_files_ref.current.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
-            if image_preview_ref.current:
-                if len(state.input_paths) == 1:
-                    image_preview_ref.current.src = state.input_paths[0]
-                    image_preview_ref.current.visible = True
-                else:
-                    image_preview_ref.current.visible = False
+
+            # Update the correct UI based on the active converter
+            if converter_type == "image":
+                if selected_files_ref_img.current:
+                    selected_files_ref_img.current.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
+                if image_preview_ref.current:
+                    if len(state.input_paths) == 1:
+                        image_preview_ref.current.src = state.input_paths[0]
+                        image_preview_ref.current.visible = True
+                    else:
+                        image_preview_ref.current.visible = False
+            elif converter_type == "audio":
+                if selected_files_ref_audio.current:
+                    selected_files_ref_audio.current.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
+
             page.update()
 
     page.on_file_drop = on_file_drop
@@ -489,33 +501,444 @@ def main(page: ft.Page):
         output_controls["controls"] = all_controls if all_controls else []
         return output_controls
 
-    navigation_rail = ft.NavigationRail(
+    def create_image_converter_view():
+        # This function will now encapsulate the entire UI for the image converter
+        # It combines the logic from the old create_dashboard_view and create_conversion_view
+
+        main_image_content_area = ft.Column(expand=True, spacing=20)
+
+        def show_image_view(mode):
+            main_image_content_area.controls.clear()
+            if mode == "dashboard":
+                main_image_content_area.controls.append(create_image_dashboard())
+            else:
+                main_image_content_area.controls.append(create_image_conversion_view(mode))
+            page.update()
+
+        def create_image_dashboard():
+            from_format = ft.Dropdown(
+                label="Converter de",
+                options=[
+                    ft.dropdown.Option("WEBP"), ft.dropdown.Option("GIF"),
+                    ft.dropdown.Option("PNG"), ft.dropdown.Option("JPG"),
+                    ft.dropdown.Option("BMP"),
+                ], width=200,
+            )
+            to_format = ft.Dropdown(
+                label="Para",
+                options=[
+                    ft.dropdown.Option("WEBP"), ft.dropdown.Option("GIF"),
+                    ft.dropdown.Option("PNG"), ft.dropdown.Option("JPG"),
+                    ft.dropdown.Option("BMP"),
+                ], width=200,
+            )
+
+            def start_conversion_setup(e):
+                if from_format.value and to_format.value:
+                    mode = f"{from_format.value}_to_{to_format.value}"
+                    show_image_view(mode)
+
+            return ft.Column(
+                controls=[
+                    ft.Text("Selecione o Formato da Conversão de Imagem", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Row(
+                        controls=[from_format, ft.Icon(ft.Icons.SWAP_HORIZ), to_format],
+                        alignment=ft.MainAxisAlignment.CENTER, spacing=20,
+                    ),
+                    ft.ElevatedButton("Iniciar", on_click=start_conversion_setup, height=50, width=200),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=30,
+                expand=True, alignment=ft.MainAxisAlignment.CENTER,
+            )
+
+        def create_image_conversion_view(mode):
+            # This is the detailed conversion view, mostly unchanged
+            # but calls show_image_view on 'back' button press
+            state.conversion_mode = mode
+            from_format, to_format = mode.split('_to_')
+            title = f"Conversor {from_format} para {to_format}"
+
+            allowed_extensions = [from_format.lower()]
+            if from_format == "JPG":
+                allowed_extensions.append("jpeg")
+
+            image_preview = ft.Image(ref=image_preview_ref, visible=False, height=150, fit=ft.ImageFit.CONTAIN)
+            selected_files_text = ft.Text("Nenhum arquivo selecionado", ref=selected_files_ref_img)
+            output_dir_text = ft.Text("Nenhuma pasta selecionada")
+            progress_bar = ft.ProgressBar(width=400, value=0)
+            status_label = ft.Text("")
+            convert_button = ft.ElevatedButton("Converter", icon=ft.Icons.SWAP_HORIZ)
+            settings_controls = create_settings_controls(mode, page)
+
+            # ... (on_files_selected, on_folder_selected, etc. remain the same)
+            def on_files_selected(e: ft.FilePickerResultEvent):
+                if e.files:
+                    state.input_paths = [f.path for f in e.files]
+                    selected_files_text.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)"
+                    if len(state.input_paths) == 1:
+                        image_preview_ref.current.src = state.input_paths[0]
+                        image_preview_ref.current.visible = True
+                    else:
+                        image_preview_ref.current.visible = False
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = "Nenhum arquivo selecionado"
+                    image_preview_ref.current.visible = False
+                page.update()
+
+            def on_folder_selected(e: ft.FilePickerResultEvent):
+                if e.path:
+                    folder_path = e.path
+                    found_files = []
+                    for root, _, files in os.walk(folder_path):
+                        for file in files:
+                            if any(file.lower().endswith(ext) for ext in allowed_extensions):
+                                found_files.append(os.path.join(root, file))
+
+                    if found_files:
+                        state.input_paths = found_files
+                        selected_files_text.value = f"{len(found_files)} arquivo(s) encontrado(s) na pasta."
+                    else:
+                        state.input_paths = []
+                        selected_files_text.value = f"Nenhum arquivo compatível encontrado na pasta selecionada."
+                    image_preview_ref.current.visible = False
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = "Nenhum arquivo selecionado."
+                    image_preview_ref.current.visible = False
+                page.update()
+
+            def on_output_dir_selected(e: ft.FilePickerResultEvent):
+                if e.path:
+                    state.output_dir = e.path
+                    output_dir_text.value = f"Destino: {state.output_dir}"
+                else:
+                    state.output_dir = ""
+                    output_dir_text.value = "Nenhuma pasta selecionada"
+                page.update()
+
+            file_picker = ft.FilePicker(on_result=on_files_selected)
+            folder_picker = ft.FilePicker(on_result=on_folder_selected)
+            output_dir_picker = ft.FilePicker(on_result=on_output_dir_selected)
+            page.overlay.extend([file_picker, folder_picker, output_dir_picker])
+
+            def run_conversion_thread():
+                # ... (conversion logic remains the same)
+                from_format, to_format = state.conversion_mode.split('_to_')
+                total_files = len(state.input_paths)
+                converted_count = 0
+
+                for i, file_path in enumerate(state.input_paths):
+                    settings = {
+                        'width': settings_controls['width'].value,
+                        'height': settings_controls['height'].value,
+                        'keep_aspect_ratio': settings_controls['keep_aspect_ratio'].value,
+                    }
+                    if 'quality' in settings_controls:
+                        settings['quality'] = int(settings_controls['quality'].value)
+                    if state.conversion_mode == 'WEBP_to_GIF':
+                        settings['frame_rate'] = int(settings_controls['fps'].value)
+                        settings['loop'] = settings_controls['loop'].value
+                    elif state.conversion_mode == 'GIF_to_WEBP':
+                        settings['lossless'] = settings_controls['lossless'].value
+
+                    success = convert_image(file_path, state.output_dir, to_format, settings)
+
+                    if success:
+                        converted_count += 1
+
+                    progress_value = (i + 1) / total_files
+                    page.run_threadsafe(update_progress, progress_value)
+
+                page.run_threadsafe(finish_conversion, converted_count, total_files)
+
+
+            def start_conversion(e):
+                if not state.input_paths or not state.output_dir:
+                    status_label.value = "Selecione arquivos e uma pasta de destino."
+                    page.update()
+                    return
+                convert_button.disabled = True
+                status_label.value = "Convertendo..."
+                progress_bar.value = 0
+                page.update()
+                thread = threading.Thread(target=run_conversion_thread, daemon=True)
+                thread.start()
+
+            def update_progress(value):
+                progress_bar.value = value
+                page.update()
+
+            def finish_conversion(count, total):
+                convert_button.disabled = False
+                status_label.value = f"{count} de {total} arquivo(s) convertido(s) com sucesso!"
+                progress_bar.value = 1.0
+                page.update()
+
+            convert_button.on_click = start_conversion
+
+            return ft.Column([
+                ft.Text(title, size=20, weight=ft.FontWeight.BOLD),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("1. Selecione os Arquivos", weight=ft.FontWeight.BOLD),
+                        ft.Row([
+                            ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=allowed_extensions)),
+                            ft.ElevatedButton("Selecionar Pasta", icon=ft.Icons.FOLDER_OPEN, on_click=lambda _: folder_picker.get_directory_path()),
+                        ]),
+                        selected_files_text,
+                        image_preview,
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("2. Escolha o Destino", weight=ft.FontWeight.BOLD),
+                        ft.Row([
+                            ft.ElevatedButton("Escolher Pasta de Destino", icon=ft.Icons.FOLDER_SPECIAL, on_click=lambda _: output_dir_picker.get_directory_path()),
+                        ]),
+                        output_dir_text
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.Container(
+                    ft.Column(settings_controls.get("controls", [])),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("4. Execute a Conversão", weight=ft.FontWeight.BOLD),
+                        ft.Row([convert_button]),
+                        progress_bar,
+                        status_label
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.ElevatedButton("Voltar para o Início", on_click=lambda _: show_image_view("dashboard"))
+            ], spacing=15)
+
+        show_image_view("dashboard")
+        return main_image_content_area
+
+    def create_audio_converter_view():
+        main_audio_content_area = ft.Column(expand=True, spacing=20)
+        bitrate_slider_ref = ft.Ref[ft.Slider]()
+
+        def show_audio_view(mode):
+            main_audio_content_area.controls.clear()
+            if mode == "dashboard":
+                main_audio_content_area.controls.append(create_audio_dashboard())
+            else:
+                main_audio_content_area.controls.append(create_audio_conversion_view(mode))
+            page.update()
+
+        def create_audio_dashboard():
+            from_format = ft.Dropdown(
+                label="Converter de",
+                options=[
+                    ft.dropdown.Option("MP3"), ft.dropdown.Option("WAV"), ft.dropdown.Option("FLAC"),
+                ], width=200,
+            )
+            to_format = ft.Dropdown(
+                label="Para",
+                options=[
+                    ft.dropdown.Option("MP3"), ft.dropdown.Option("WAV"), ft.dropdown.Option("FLAC"),
+                ], width=200,
+            )
+
+            def start_audio_conversion_setup(e):
+                if from_format.value and to_format.value:
+                    if from_format.value == to_format.value:
+                        # Optional: Add user feedback about same format conversion
+                        return
+                    mode = f"audio_{from_format.value}_to_{to_format.value}"
+                    show_audio_view(mode)
+
+            return ft.Column(
+                controls=[
+                    ft.Text("Selecione o Formato da Conversão de Áudio", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Row(
+                        controls=[from_format, ft.Icon(ft.Icons.SWAP_HORIZ), to_format],
+                        alignment=ft.MainAxisAlignment.CENTER, spacing=20,
+                    ),
+                    ft.ElevatedButton("Iniciar", on_click=start_audio_conversion_setup, height=50, width=200),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=30,
+                expand=True, alignment=ft.MainAxisAlignment.CENTER,
+            )
+
+        def create_audio_conversion_view(mode):
+            state.conversion_mode = mode
+            _, from_format, _, to_format = mode.split('_')
+            title = f"Conversor de Áudio: {from_format} para {to_format}"
+
+            allowed_extensions = [from_format.lower()]
+
+            selected_files_text = ft.Text("Nenhum arquivo selecionado", ref=selected_files_ref_audio)
+            output_dir_text = ft.Text("Nenhuma pasta selecionada")
+            progress_bar = ft.ProgressBar(width=400, value=0)
+            status_label = ft.Text("")
+            convert_button = ft.ElevatedButton("Converter", icon=ft.Icons.SWAP_HORIZ)
+
+            # --- Audio Specific Settings ---
+            bitrate_slider = ft.Slider(
+                ref=bitrate_slider_ref,
+                min=32, max=320, divisions=9, value=192,
+                label="Bitrate: {value} kbps"
+            )
+            settings_view = ft.Column([
+                ft.Text("3. Ajuste as Configurações", weight=ft.FontWeight.BOLD),
+                ft.Text("Bitrate (Qualidade de Áudio)", weight=ft.FontWeight.NORMAL),
+                bitrate_slider
+            ])
+            # Hide settings for lossless formats like WAV/FLAC where bitrate isn't applicable
+            settings_view.visible = to_format == "MP3"
+
+
+            def on_files_selected_audio(e: ft.FilePickerResultEvent):
+                if e.files:
+                    state.input_paths = [f.path for f in e.files]
+                    selected_files_text.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)"
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = "Nenhum arquivo selecionado"
+                page.update()
+
+            def on_folder_selected_audio(e: ft.FilePickerResultEvent):
+                if e.path:
+                    folder_path = e.path
+                    found_files = []
+                    for root, _, files in os.walk(folder_path):
+                        for file in files:
+                            if any(file.lower().endswith(ext) for ext in allowed_extensions):
+                                found_files.append(os.path.join(root, file))
+
+                    if found_files:
+                        state.input_paths = found_files
+                        selected_files_text.value = f"{len(found_files)} arquivo(s) encontrado(s) na pasta."
+                    else:
+                        state.input_paths = []
+                        selected_files_text.value = "Nenhum arquivo compatível encontrado."
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = "Nenhum arquivo selecionado."
+                page.update()
+
+            def on_output_dir_selected_audio(e: ft.FilePickerResultEvent):
+                if e.path:
+                    state.output_dir = e.path
+                    output_dir_text.value = f"Destino: {state.output_dir}"
+                else:
+                    state.output_dir = ""
+                    output_dir_text.value = "Nenhuma pasta selecionada"
+                page.update()
+
+            file_picker_audio = ft.FilePicker(on_result=on_files_selected_audio)
+            folder_picker_audio = ft.FilePicker(on_result=on_folder_selected_audio)
+            output_dir_picker_audio = ft.FilePicker(on_result=on_output_dir_selected_audio)
+            page.overlay.extend([file_picker_audio, folder_picker_audio, output_dir_picker_audio])
+
+            def run_audio_conversion_thread():
+                _, _, _, to_fmt = state.conversion_mode.split('_')
+                total_files = len(state.input_paths)
+
+                for i, file_path in enumerate(state.input_paths):
+                    bitrate = f"{int(bitrate_slider_ref.current.value)}k" if bitrate_slider_ref.current else "192k"
+                    convert_audio(file_path, state.output_dir, to_fmt, bitrate)
+                    page.run_threadsafe(update_progress, (i + 1) / total_files)
+
+                page.run_threadsafe(finish_conversion, total_files, total_files) # Assuming success for now
+
+            def start_audio_conversion(e):
+                if not state.input_paths or not state.output_dir:
+                    status_label.value = "Selecione arquivos e uma pasta de destino."
+                    page.update()
+                    return
+                convert_button.disabled = True
+                status_label.value = "Convertendo..."
+                progress_bar.value = 0
+                page.update()
+                thread = threading.Thread(target=run_audio_conversion_thread, daemon=True)
+                thread.start()
+
+            def update_progress(value):
+                progress_bar.value = value
+                page.update()
+
+            def finish_conversion(count, total):
+                convert_button.disabled = False
+                status_label.value = f"{count} de {total} arquivo(s) convertido(s) com sucesso!"
+                progress_bar.value = 1.0
+                page.update()
+
+            convert_button.on_click = start_audio_conversion
+
+            return ft.Column([
+                ft.Text(title, size=20, weight=ft.FontWeight.BOLD),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("1. Selecione os Arquivos de Áudio", weight=ft.FontWeight.BOLD),
+                        ft.Row([
+                            ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker_audio.pick_files(allow_multiple=True, allowed_extensions=allowed_extensions)),
+                            ft.ElevatedButton("Selecionar Pasta", icon=ft.Icons.FOLDER_OPEN, on_click=lambda _: folder_picker_audio.get_directory_path()),
+                        ]),
+                        selected_files_text,
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("2. Escolha o Destino", weight=ft.FontWeight.BOLD),
+                        ft.Row([
+                            ft.ElevatedButton("Escolher Pasta de Destino", icon=ft.Icons.FOLDER_SPECIAL, on_click=lambda _: output_dir_picker_audio.get_directory_path()),
+                        ]),
+                        output_dir_text
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.Container(
+                    settings_view,
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("4. Execute a Conversão", weight=ft.FontWeight.BOLD),
+                        ft.Row([convert_button]),
+                        progress_bar,
+                        status_label
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                ft.ElevatedButton("Voltar para o Início", on_click=lambda _: show_audio_view("dashboard"))
+            ], spacing=15)
+
+        show_audio_view("dashboard")
+        return main_audio_content_area
+
+    tabs = ft.Tabs(
         selected_index=0,
-        label_type=ft.NavigationRailLabelType.ALL,
-        min_width=100,
-        min_extended_width=400,
-        leading=ft.Text("Menu", size=16, weight=ft.FontWeight.BOLD),
-        group_alignment=-0.9,
-        destinations=[
-            ft.NavigationRailDestination(icon=ft.Icons.DASHBOARD_OUTLINED, selected_icon=ft.Icons.DASHBOARD, label="Dashboard"),
-            ft.NavigationRailDestination(icon=ft.Icons.SETTINGS_OUTLINED, selected_icon=ft.Icons.SETTINGS, label="Configurações"),
-            ft.NavigationRailDestination(icon=ft.Icons.INFO_OUTLINE, selected_icon=ft.Icons.INFO, label="Sobre"),
+        animation_duration=300,
+        tabs=[
+            ft.Tab(
+                text="Imagem",
+                icon=ft.Icons.IMAGE,
+                content=create_image_converter_view(),
+            ),
+            ft.Tab(
+                text="Áudio",
+                icon=ft.Icons.AUDIOTRACK,
+                content=create_audio_converter_view(),
+            ),
+            ft.Tab(
+                text="Vídeo",
+                icon=ft.Icons.VIDEOCAM,
+                content=ft.Text("Funcionalidade de conversão de vídeo em breve!", size=20, text_align=ft.TextAlign.CENTER),
+            ),
         ],
-        on_change=lambda e: show_view("dashboard") if e.control.selected_index == 0 else None,
+        expand=1,
     )
 
-    page.add(
-        ft.Row(
-            [
-                navigation_rail,
-                ft.VerticalDivider(width=1),
-                ft.Container(content=main_content_area, expand=True, padding=ft.padding.all(20)),
-            ],
-            expand=True,
-        )
-    )
-
-    show_view("dashboard")
+    page.add(tabs)
 
     # --- Start Update Check ---
     update_manager = UpdateManager(page)

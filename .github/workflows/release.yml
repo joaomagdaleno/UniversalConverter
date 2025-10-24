@@ -35,6 +35,26 @@ jobs:
         env:
           PYTHONUTF8: "1"
 
+      - name: Download and Set Up FFmpeg
+        run: |
+          # URL for the FFmpeg essentials build
+          $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z"
+          $ffmpegZipPath = "ffmpeg-release-essentials.7z"
+
+          # Download the archive
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegZipPath
+
+          # Extract the archive (requires 7-Zip, which is pre-installed on GitHub runners)
+          7z x $ffmpegZipPath -offmpeg_extracted
+
+          # Create the assets directory in the packaged application folder
+          $assetsDir = "dist/UniversalConverter/assets"
+          New-Item -ItemType Directory -Force -Path $assetsDir
+
+          # Copy the necessary FFmpeg executables into the assets directory
+          Copy-Item -Path "ffmpeg_extracted/*/bin/ffmpeg.exe" -Destination $assetsDir
+          Copy-Item -Path "ffmpeg_extracted/*/bin/ffprobe.exe" -Destination $assetsDir
+
       - name: Zip the output
         run: |
           Compress-Archive -Path dist/UniversalConverter -DestinationPath dist/UniversalConverter-v${{ steps.version.outputs.app_version }}.zip
