@@ -165,6 +165,7 @@ class UpdateManager:
 # --- Main App ---
 from converter import convert_image
 from audio_converter import convert_audio
+from video_converter import convert_video
 
 class AppState:
     def __init__(self):
@@ -184,6 +185,7 @@ def main(page: ft.Page):
     # Refs for UI controls that need to be updated programmatically
     selected_files_ref_img = ft.Ref[ft.Text]()
     selected_files_ref_audio = ft.Ref[ft.Text]()
+    selected_files_ref_video = ft.Ref[ft.Text]()
     image_preview_ref = ft.Ref[ft.Image]()
 
     def on_file_drop(e: ft.FileDropEvent):
@@ -226,6 +228,9 @@ def main(page: ft.Page):
             elif converter_type == "audio":
                 if selected_files_ref_audio.current:
                     selected_files_ref_audio.current.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
+            elif converter_type == "video":
+                if selected_files_ref_video.current:
+                    selected_files_ref_video.current.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)."
 
             page.update()
 
@@ -915,6 +920,210 @@ def main(page: ft.Page):
         show_audio_view("dashboard")
         return main_audio_content_area
 
+    def create_video_converter_view():
+        main_video_content_area = ft.Column(expand=True, spacing=20)
+
+        def show_video_view(mode):
+            main_video_content_area.controls.clear()
+            if mode == "dashboard":
+                main_video_content_area.controls.append(create_video_dashboard())
+            else:
+                main_video_content_area.controls.append(create_video_conversion_view(mode))
+            page.update()
+
+        def create_video_dashboard():
+            from_format = ft.Dropdown(
+                label="Converter de",
+                options=[
+                    ft.dropdown.Option("MP4"), ft.dropdown.Option("MKV"), ft.dropdown.Option("MOV"),
+                ], width=200,
+            )
+            to_format = ft.Dropdown(
+                label="Para",
+                options=[
+                    ft.dropdown.Option("MP4"), ft.dropdown.Option("WEBM"),
+                ], width=200,
+            )
+
+            def start_video_conversion_setup(e):
+                if from_format.value and to_format.value:
+                    mode = f"video_{from_format.value}_to_{to_format.value}"
+                    show_video_view(mode)
+
+            return ft.Column(
+                controls=[
+                    ft.Text("Selecione o Formato da Conversão de Vídeo", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Row(
+                        controls=[from_format, ft.Icon(ft.Icons.SWAP_HORIZ), to_format],
+                        alignment=ft.MainAxisAlignment.CENTER, spacing=20,
+                    ),
+                    ft.ElevatedButton("Iniciar", on_click=start_video_conversion_setup, height=50, width=200),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=30,
+                expand=True, alignment=ft.MainAxisAlignment.CENTER,
+            )
+
+        def create_video_conversion_view(mode):
+            state.conversion_mode = mode
+            _, from_format, _, to_format = mode.split('_')
+            title = f"Conversor de Vídeo: {from_format} para {to_format}"
+
+            allowed_extensions = [from_format.lower()]
+
+            selected_files_text = ft.Text("Nenhum arquivo selecionado", ref=selected_files_ref_video)
+            output_dir_text = ft.Text("Nenhuma pasta selecionada")
+            progress_bar = ft.ProgressBar(width=400, value=0)
+            status_label = ft.Text("")
+            convert_button = ft.ElevatedButton("Converter", icon=ft.Icons.SWAP_HORIZ)
+
+            # --- Video Specific Settings ---
+            resolution_dropdown = ft.Dropdown(
+                label="Resolução",
+                options=[
+                    ft.dropdown.Option("_", "Manter Original"),
+                    ft.dropdown.Option("1920x1080", "1080p"),
+                    ft.dropdown.Option("1280x720", "720p"),
+                    ft.dropdown.Option("854x480", "480p"),
+                ],
+                value="_",
+                width=200,
+            )
+            quality_slider = ft.Slider(min=0, max=2, divisions=2, value=1) # Low, Medium, High
+
+            def quality_label_map(value):
+                if value == 0: return "Baixa"
+                if value == 1: return "Média"
+                if value == 2: return "Alta"
+                return ""
+
+            quality_slider.label = quality_label_map(quality_slider.value)
+
+
+            settings_view = ft.Column([
+                ft.Text("3. Ajuste as Configurações", weight=ft.FontWeight.BOLD),
+                resolution_dropdown,
+                ft.Text(f"Qualidade: {quality_label_map(quality_slider.value)}"),
+                quality_slider,
+            ])
+
+            def on_files_selected_video(e: ft.FilePickerResultEvent):
+                if e.files:
+                    state.input_paths = [f.path for f in e.files]
+                    selected_files_text.value = f"{len(state.input_paths)} arquivo(s) selecionado(s)"
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = "Nenhum arquivo selecionado"
+                page.update()
+
+            def on_folder_selected_video(e: ft.FilePickerResultEvent):
+                if e.path:
+                    folder_path = e.path
+                    found_files = []
+                    for root, _, files in os.walk(folder_path):
+                        for file in files:
+                            if any(file.lower().endswith(ext) for ext in allowed_extensions):
+                                found_files.append(os.path.join(root, file))
+
+                    if found_files:
+                        state.input_paths = found_files
+                        selected_files_text.value = f"{len(found_files)} arquivo(s) encontrado(s) na pasta."
+                    else:
+                        state.input_paths = []
+                        selected_files_text.value = "Nenhum arquivo compatível encontrado."
+                else:
+                    state.input_paths = []
+                    selected_files_text.value = "Nenhum arquivo selecionado."
+                page.update()
+
+            def on_output_dir_selected_video(e: ft.FilePickerResultEvent):
+                if e.path:
+                    state.output_dir = e.path
+                    output_dir_text.value = f"Destino: {state.output_dir}"
+                page.update()
+
+            file_picker_video = ft.FilePicker(on_result=on_files_selected_video)
+            folder_picker_video = ft.FilePicker(on_result=on_folder_selected_video)
+            output_dir_picker_video = ft.FilePicker(on_result=on_output_dir_selected_video)
+            page.overlay.extend([file_picker_video, folder_picker_video, output_dir_picker_video])
+
+            def run_video_conversion_thread():
+                _, _, _, to_fmt = state.conversion_mode.split('_')
+                quality_map = {0: "Low", 1: "Medium", 2: "High"}
+                quality = quality_map[int(quality_slider.value)]
+                resolution = resolution_dropdown.value
+
+                total_files = len(state.input_paths)
+                for i, file_path in enumerate(state.input_paths):
+                    convert_video(file_path, state.output_dir, to_fmt, resolution, quality)
+                    page.run_threadsafe(update_progress, (i + 1) / total_files)
+
+                page.run_threadsafe(finish_conversion, total_files, total_files)
+
+            def update_progress(value):
+                progress_bar.value = value
+                page.update()
+
+            def finish_conversion(count, total):
+                convert_button.disabled = False
+                status_label.value = f"{count} de {total} arquivo(s) convertido(s) com sucesso!"
+                progress_bar.value = 1.0
+                page.update()
+
+            def start_video_conversion(e):
+                if not state.input_paths or not state.output_dir:
+                    status_label.value = "Selecione arquivos e uma pasta de destino."
+                    page.update()
+                    return
+                convert_button.disabled = True
+                status_label.value = "Convertendo..."
+                progress_bar.value = 0
+                page.update()
+                thread = threading.Thread(target=run_video_conversion_thread, daemon=True)
+                thread.start()
+
+            convert_button.on_click = start_video_conversion
+
+            return ft.Column([
+                 ft.Text(title, size=20, weight=ft.FontWeight.BOLD),
+                 # File selection UI
+                 ft.Container(
+                    ft.Column([
+                        ft.Text("1. Selecione os Arquivos de Vídeo", weight=ft.FontWeight.BOLD),
+                        ft.Row([
+                            ft.ElevatedButton("Selecionar Arquivos", icon=ft.Icons.UPLOAD_FILE, on_click=lambda _: file_picker_video.pick_files(allow_multiple=True, allowed_extensions=allowed_extensions)),
+                             ft.ElevatedButton("Selecionar Pasta", icon=ft.Icons.FOLDER_OPEN, on_click=lambda _: folder_picker_video.get_directory_path()),
+                        ]),
+                        selected_files_text,
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                 # Destination UI
+                 ft.Container(
+                    ft.Column([
+                        ft.Text("2. Escolha o Destino", weight=ft.FontWeight.BOLD),
+                        ft.Row([ft.ElevatedButton("Escolher Pasta de Destino", icon=ft.Icons.FOLDER_SPECIAL, on_click=lambda _: output_dir_picker_video.get_directory_path())]),
+                        output_dir_text,
+                    ]),
+                     padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                ),
+                 # Settings UI
+                 ft.Container(settings_view, padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)),
+                 # Conversion UI
+                 ft.Container(
+                    ft.Column([
+                        ft.Text("4. Execute a Conversão", weight=ft.FontWeight.BOLD),
+                        ft.Row([convert_button]),
+                        progress_bar,
+                        status_label,
+                    ]),
+                    padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=ft.border_radius.all(5)
+                 ),
+                 ft.ElevatedButton("Voltar para o Início", on_click=lambda _: show_video_view("dashboard"))
+            ], spacing=15)
+
+        show_video_view("dashboard")
+        return main_video_content_area
+
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
@@ -932,7 +1141,7 @@ def main(page: ft.Page):
             ft.Tab(
                 text="Vídeo",
                 icon=ft.Icons.VIDEOCAM,
-                content=ft.Text("Funcionalidade de conversão de vídeo em breve!", size=20, text_align=ft.TextAlign.CENTER),
+                content=create_video_converter_view(),
             ),
         ],
         expand=1,

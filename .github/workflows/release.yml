@@ -37,9 +37,9 @@ jobs:
 
       - name: Download and Set Up FFmpeg
         run: |
-          # URL for the FFmpeg essentials build
-          $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z"
-          $ffmpegZipPath = "ffmpeg-release-essentials.7z"
+          # URL for the FFmpeg full build
+          $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z"
+          $ffmpegZipPath = "ffmpeg-release-full.7z"
 
           # Download the archive
           Invoke-WebRequest -Uri $ffmpegUrl -OutFile $ffmpegZipPath
