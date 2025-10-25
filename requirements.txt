@@ -3,3 +3,4 @@ packaging
 pyinstaller
 flet
 requests
+pydub
