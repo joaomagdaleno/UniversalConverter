@@ -19,17 +19,34 @@ def convert_image(input_path, output_dir, to_format, settings=None):
             i += 1
 
         with Image.open(input_path) as img:
-            width = settings.get('width')
-            height = settings.get('height')
-            if width and height:
-                try:
-                    w, h = int(width), int(height)
-                    if settings.get('keep_aspect_ratio', True):
-                        img.thumbnail((w, h))
-                    else:
+            width_str = settings.get('width')
+            height_str = settings.get('height')
+            keep_aspect = settings.get('keep_aspect_ratio', True)
+
+            try:
+                w = int(width_str) if width_str and width_str.isdigit() else 0
+                h = int(height_str) if height_str and height_str.isdigit() else 0
+
+                # Only proceed if at least one dimension is specified
+                if w > 0 or h > 0:
+                    if keep_aspect:
+                        # If both dimensions are provided, use thumbnail to fit within the box
+                        if w > 0 and h > 0:
+                            img.thumbnail((w, h))
+                        # If only one dimension is provided, calculate the other and resize
+                        else:
+                            original_width, original_height = img.size
+                            if w > 0:  # h is 0
+                                h = round(w * original_height / original_width)
+                            else:  # w is 0
+                                w = round(h * original_width / original_height)
+                            img = img.resize((w, h))
+                    # If not keeping aspect ratio, both dimensions must be provided
+                    elif w > 0 and h > 0:
                         img = img.resize((w, h))
-                except (ValueError, TypeError):
-                    pass
+
+            except (ValueError, TypeError):
+                pass # Silently ignore errors in dimensions and don't resize
 
             save_params = {}
             is_animated = hasattr(img, 'n_frames') and img.n_frames > 1
