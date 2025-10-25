@@ -4,3 +4,4 @@ pyinstaller
 flet
 requests
 pydub
+PySide6
