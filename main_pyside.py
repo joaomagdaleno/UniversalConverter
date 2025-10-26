@@ -10,9 +10,9 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal, QObject
 from PySide6.QtGui import QFont
 
-from converter import convert_image, get_image_format_options
-from audio_converter import convert_audio, get_audio_format_options
-from video_converter import convert_video, get_video_format_options
+from converter import convert_image
+from audio_converter import convert_audio
+from video_converter import convert_video
 
 class Worker(QObject):
     progress = Signal(int)
