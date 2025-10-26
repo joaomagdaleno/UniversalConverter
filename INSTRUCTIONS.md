@@ -42,27 +42,34 @@ Esta seção descreve como configurar o ambiente de desenvolvimento para trabalh
 
 ## 🚀 Como Lançar Novas Versões
 
-O projeto está configurado com um workflow de GitHub Actions que automatiza o processo de build e release. Para lançar uma nova versão, siga os passos abaixo.
+O projeto está configurado com um workflow de GitHub Actions que automatiza o processo de build e release. A versão do aplicativo é determinada **diretamente pela tag do Git**.
 
-### Passo 1: Atualize o Número da Versão
+Para lançar uma nova versão, siga os passos abaixo:
 
-Abra o arquivo `VERSION.txt` e atualize o número da versão (ex: de `1.1.0` para `2.0.0`).
-
-### Passo 2: Faça o Commit da Nova Versão
-
-```bash
-git add VERSION.txt
-git commit -m "Bump version to 2.0.0"
-git push
-```
-
-### Passo 3: Crie e Envie uma Tag do Git
+### Passo 1: Crie e Envie uma Tag do Git
 
 O workflow de release é acionado pela criação de uma **tag** que começa com `v`.
 
-1.  **Crie a tag localmente:** `git tag v2.0.0`
-2.  **Envie a tag para o repositório remoto:** `git push origin v2.0.0`
+1.  **Certifique-se de que seu branch principal está atualizado:**
+    ```bash
+    git checkout main
+    git pull origin main
+    ```
 
-### Passo 4: Verifique o Release no GitHub
+2.  **Crie a tag localmente:**
+    O nome da tag se tornará a versão oficial. Use o formato `vX.Y.Z`.
+    ```bash
+    git tag v2.1.0
+    ```
 
-Após enviar a tag, a GitHub Action será iniciada. Quando o processo terminar, uma nova "Release" será criada na página do repositório, contendo um arquivo `.zip` com o programa.
+3.  **Envie a tag para o repositório remoto:**
+    ```bash
+    git push origin v2.1.0
+    ```
+
+### Passo 2: Verifique o Release no GitHub
+
+Após enviar a tag, a GitHub Action será iniciada. O workflow irá automaticamente:
+-   Atualizar o arquivo `VERSION.txt` com a versão da tag.
+-   Empacotar a aplicação.
+-   Criar uma nova "Release" na página do repositório, contendo um arquivo `.zip` com o programa.

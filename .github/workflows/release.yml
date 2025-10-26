@@ -34,9 +34,14 @@ jobs:
           Move-Item -Path ffmpeg/ffmpeg-*/bin/* -Destination ./ffmpeg-bin
         shell: pwsh
 
-      - name: Get version from file
+      - name: Get version from tag and update VERSION.txt
         id: version
-        run: echo "app_version=$(cat VERSION.txt)" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+        run: |
+          $tagName = "${{ github.ref_name }}"
+          $version = $tagName.Substring(1)
+          "app_version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Set-Content -Path "VERSION.txt" -Value $version
 
       - name: Package application with PyInstaller
         run: |
@@ -44,7 +49,9 @@ jobs:
             --name UniversalConverter `
             --noconsole `
             --onedir `
-            --add-data "ffmpeg-bin;ffmpeg-bin"
+            --add-data "ffmpeg-bin;ffmpeg-bin" `
+            --add-data "VERSION.txt;." `
+            --add-data "install_update.py;."
         shell: pwsh
         env:
           PYTHONUTF8: "1"
