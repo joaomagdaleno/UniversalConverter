@@ -1,8 +1,6 @@
 Pillow
 packaging
 pyinstaller
-flet
 requests
 pydub
 PySide6
-audioop-lts
