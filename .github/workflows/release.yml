@@ -30,7 +30,7 @@ jobs:
         run: |
           curl -L -o ffmpeg.7z https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z
           7z x ffmpeg.7z -offmpeg
-          Move-Item -Path ffmpeg/ffmpeg-*/bin/* -DestinationPath ./ffmpeg-bin
+          Move-Item -Path ffmpeg/ffmpeg-*/bin/* -Destination ./ffmpeg-bin
         shell: pwsh
 
       - name: Get version from file
