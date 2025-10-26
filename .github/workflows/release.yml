@@ -45,13 +45,21 @@ jobs:
 
       - name: Package application with PyInstaller
         run: |
+          # Build the main application
           pyinstaller main_pyside.py `
             --name UniversalConverter `
             --noconsole `
             --onedir `
             --add-data "ffmpeg-bin;ffmpeg-bin" `
-            --add-data "VERSION.txt;." `
-            --add-data "install_update.py;."
+            --add-data "VERSION.txt;."
+
+          # Build the standalone installer
+          pyinstaller install_update.py `
+            --name install_update `
+            --onefile
+
+          # Move the installer into the main app's directory
+          Move-Item -Path dist/install_update.exe -Destination dist/UniversalConverter/
         shell: pwsh
         env:
           PYTHONUTF8: "1"
