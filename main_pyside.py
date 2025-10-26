@@ -1,11 +1,12 @@
 
 import sys
 import os
+import subprocess
 from functools import partial
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QStackedWidget, QFileDialog, QProgressBar, QSlider,
-    QComboBox, QCheckBox, QGridLayout, QTabWidget
+    QComboBox, QGridLayout, QTabWidget, QMessageBox
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject
 from PySide6.QtGui import QFont
@@ -13,7 +14,9 @@ from PySide6.QtGui import QFont
 from converter import convert_image
 from audio_converter import convert_audio
 from video_converter import convert_video
+from updater import check_for_updates, download_update
 
+# --- Worker for background tasks (file conversion) ---
 class Worker(QObject):
     progress = Signal(int)
     finished = Signal(str)
@@ -27,14 +30,36 @@ class Worker(QObject):
 
     def run(self):
         try:
-            self.target(
-                *self.args,
-                **self.kwargs,
-                progress_callback=self.progress.emit
-            )
+            self.target(*self.args, **self.kwargs, progress_callback=self.progress.emit)
             self.finished.emit("Conversão concluída com sucesso!")
         except Exception as e:
             self.error.emit(f"Erro na conversão: {e}")
+
+# --- Workers for the update process ---
+class CheckUpdateWorker(QObject):
+    update_found = Signal(str, str)
+    no_update_found = Signal()
+
+    def run(self):
+        is_available, latest_version, download_url = check_for_updates()
+        if is_available and download_url:
+            self.update_found.emit(latest_version, download_url)
+        else:
+            self.no_update_found.emit()
+
+class DownloadWorker(QObject):
+    progress = Signal(int)
+    finished = Signal(str, str) # Emits version and downloaded file path
+
+    def __init__(self, version, url):
+        super().__init__()
+        self.version = version
+        self.url = url
+
+    def run(self):
+        file_path = download_update(self.url, self.progress.emit)
+        if file_path:
+            self.finished.emit(self.version, file_path)
 
 class BaseConversionWidget(QWidget):
     def __init__(self, parent=None):
@@ -90,7 +115,6 @@ class BaseConversionWidget(QWidget):
         folder = QFileDialog.getExistingDirectory(self, "Selecionar Pasta de Destino")
         if folder:
             self.output_dir = folder
-            # For simplicity, let's just confirm the output dir is set.
             self.status_label.setText(f"Pasta de destino selecionada. {len(self.files)} arquivo(s) pronto(s) para converter.")
 
     def update_progress(self, value):
@@ -107,7 +131,6 @@ class BaseConversionWidget(QWidget):
         self.convert_button.setEnabled(True)
 
     def start_conversion(self):
-        # This method will be implemented in subclasses
         raise NotImplementedError
 
 class ImageConversionWidget(BaseConversionWidget):
@@ -117,7 +140,6 @@ class ImageConversionWidget(BaseConversionWidget):
         self.to_format = to_format
         self.title_label.setText(f"Converter {from_format} para {to_format}")
 
-        # Image specific options
         self.quality_slider = QSlider(Qt.Horizontal)
         self.quality_slider.setRange(1, 100)
         self.quality_slider.setValue(90)
@@ -151,7 +173,6 @@ class AudioConversionWidget(BaseConversionWidget):
         self.to_format = to_format
         self.title_label.setText(f"Converter {from_format} para {to_format}")
 
-        # Audio specific options
         self.bitrate_combo = QComboBox()
         self.bitrate_combo.addItems(["96k", "128k", "192k", "256k", "320k"])
         self.bitrate_combo.setCurrentText("192k")
@@ -185,7 +206,6 @@ class VideoConversionWidget(BaseConversionWidget):
         self.to_format = to_format
         self.title_label.setText(f"Converter {from_format} para {to_format}")
 
-        # Video specific options
         self.quality_slider = QSlider(Qt.Horizontal)
         self.quality_slider.setRange(18, 28)
         self.quality_slider.setValue(23)
@@ -213,9 +233,17 @@ class VideoConversionWidget(BaseConversionWidget):
         self.thread.start()
 
 class DashboardWidget(QWidget):
-    def __init__(self, start_conversion_callback):
+    def __init__(self, start_conversion_callback, check_for_updates_callback):
         super().__init__()
         main_layout = QVBoxLayout(self)
+
+        top_layout = QHBoxLayout()
+        top_layout.addStretch()
+        self.update_button = QPushButton("Verificar Atualizações")
+        self.update_button.clicked.connect(check_for_updates_callback)
+        top_layout.addWidget(self.update_button)
+        main_layout.addLayout(top_layout)
+
         main_layout.setAlignment(Qt.AlignCenter)
 
         self.tabs = QTabWidget()
@@ -363,11 +391,12 @@ class MainWindow(QMainWindow):
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
 
-        self.dashboard = DashboardWidget(self.start_conversion)
+        self.dashboard = DashboardWidget(self.start_conversion, self.check_for_updates)
         self.stacked_widget.addWidget(self.dashboard)
 
+        self.check_for_updates(is_manual_check=False)
+
     def start_conversion(self, from_format, to_format):
-        # Determine if it's image, audio or video based on format
         image_formats = ["WEBP", "GIF", "PNG", "JPG", "BMP"]
         audio_formats = ["MP3", "WAV", "FLAC"]
 
@@ -375,7 +404,7 @@ class MainWindow(QMainWindow):
             self.conversion_widget = ImageConversionWidget(from_format, to_format, self)
         elif from_format.upper() in audio_formats:
             self.conversion_widget = AudioConversionWidget(from_format, to_format, self)
-        else: # Video
+        else:
             self.conversion_widget = VideoConversionWidget(from_format, to_format, self)
 
         self.stacked_widget.addWidget(self.conversion_widget)
@@ -383,10 +412,57 @@ class MainWindow(QMainWindow):
 
     def show_dashboard(self):
         self.stacked_widget.setCurrentWidget(self.dashboard)
-        # Optional: remove the conversion widget after use
         if hasattr(self, 'conversion_widget'):
             self.stacked_widget.removeWidget(self.conversion_widget)
             del self.conversion_widget
+
+    def check_for_updates(self, is_manual_check=True):
+        self.update_check_thread = QThread()
+        self.update_check_worker = CheckUpdateWorker()
+        self.update_check_worker.moveToThread(self.update_check_thread)
+        self.update_check_worker.update_found.connect(self.start_silent_download)
+
+        if is_manual_check:
+            self.update_check_worker.no_update_found.connect(self.show_no_update_dialog)
+
+        self.update_check_thread.started.connect(self.update_check_worker.run)
+        self.update_check_thread.start()
+
+    def start_silent_download(self, version, url):
+        self.download_thread = QThread()
+        self.download_worker = DownloadWorker(version, url)
+        self.download_worker.moveToThread(self.download_thread)
+        self.download_worker.finished.connect(self.show_restart_dialog)
+        # Optional: could connect progress to a status bar item
+        self.download_thread.started.connect(self.download_worker.run)
+        self.download_thread.start()
+
+    def show_restart_dialog(self, version, file_path):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("Atualização Pronta")
+        dlg.setText(f"A nova versão ({version}) foi baixada.\n\nDeseja reiniciar agora para instalar a atualização?")
+        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        dlg.setIcon(QMessageBox.Information)
+
+        if dlg.exec() == QMessageBox.Yes:
+            self.install_and_restart(file_path)
+
+    def install_and_restart(self, file_path):
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+            app_path = sys.executable
+        else:
+            base_path = os.path.dirname(__file__)
+            app_path = os.path.abspath(sys.argv[0])
+
+        installer_script = os.path.join(base_path, "install_update.py")
+
+        subprocess.Popen([sys.executable, installer_script, file_path, app_path, str(os.getpid())])
+
+        QApplication.instance().quit()
+
+    def show_no_update_dialog(self):
+        QMessageBox.information(self, "Sem Atualizações", "Você já está usando a versão mais recente.")
 
 
 if __name__ == "__main__":
