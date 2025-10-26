@@ -2,14 +2,6 @@ import os
 from pydub import AudioSegment
 
 def convert_audio(input_path, output_dir, to_format, settings=None):
-    """
-    Converts an audio file to a different format using pydub.
-
-    :param input_path: Path to the input audio file.
-    :param output_dir: Directory to save the converted file.
-    :param to_format: The target audio format (e.g., 'mp3', 'wav', 'flac').
-    :param settings: A dictionary of conversion settings. Expected keys: 'bitrate'.
-    """
     if settings is None:
         settings = {}
     to_format_lower = to_format.lower()
