@@ -449,16 +449,22 @@ class MainWindow(QMainWindow):
 
     def install_and_restart(self, file_path):
         if getattr(sys, 'frozen', False):
-            base_path = sys._MEIPASS
+            # The application is running as a bundled executable
+            app_dir = os.path.dirname(sys.executable)
             app_path = sys.executable
+            installer_path = os.path.join(app_dir, "install_update.exe")
         else:
-            base_path = os.path.dirname(__file__)
-            app_path = os.path.abspath(sys.argv[0])
+            # The application is running as a standard Python script
+            app_dir = os.path.dirname(__file__)
+            app_path = os.path.abspath(sys.argv[0]) # Path to main_pyside.py
+            installer_path = os.path.join(app_dir, "install_update.py") # The script itself
+            # In dev, we need to call it with python
+            subprocess.Popen([sys.executable, installer_path, file_path, app_path, str(os.getpid())])
+            QApplication.instance().quit()
+            return
 
-        installer_script = os.path.join(base_path, "install_update.py")
-
-        subprocess.Popen([sys.executable, installer_script, file_path, app_path, str(os.getpid())])
-
+        # For the packaged app, run the executable directly
+        subprocess.Popen([installer_path, file_path, app_path, str(os.getpid())])
         QApplication.instance().quit()
 
     def show_no_update_dialog(self):
