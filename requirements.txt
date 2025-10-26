@@ -5,3 +5,4 @@ flet
 requests
 pydub
 PySide6
+pyaudioop
