@@ -4,4 +4,3 @@ pyinstaller
 requests
 pydub
 PySide6
-audioop-lts
